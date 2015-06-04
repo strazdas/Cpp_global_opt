@@ -24,27 +24,37 @@ class Point {
 public:
     Point(){};
     Point(int *c, int argc){
+        _D = argc;
+        _X = (double*) malloc((argc)*sizeof(double));
         for (int i=0; i<argc ; i++){
-            _X.push_back(double(c[i]));
+            _X[i] = double(c[i]);
         };
     };
     Point(double *c, int argc){
+        _D = argc;
+        _X = (double*) malloc((argc)*sizeof(double));
         for (int i=0; i<argc ; i++){
-            _X.push_back(c[i]);
+            _X[i] = c[i];
         };
     };
-    Point(double c1){};
+    Point(double c, int argc){
+        _D = argc;
+        _X = (double*) malloc((argc)*sizeof(double));
+        for (int i=0; i<argc ; i++){
+            _X[i] = c;
+        };
+    };
     Point(double c1, double c2){
-        _X.push_back(c1);
-        _X.push_back(c2);
+        _D = 2;
+        _X = (double*) malloc(2*sizeof(double));
+        _X[0] = c1;
+        _X[1] = c2;
     };
 
-    vector<double> _X;  // Coordinates in normalised [0,1]^n space  
+    int _D;
+    double* _X;  // Coordinates in normalised [0,1]^n space  
     vector<double> _values;
          
-    void add_coord(double x) {
-        _X.push_back(x);
-    };
     void add_value(double value) {
         _values.push_back(value);
     };
@@ -57,12 +67,12 @@ public:
     // };
 
     int size(){
-        return _X.size();
+        return _D;
     };
 
     void print(){
         cout << "       ";
-        for (int i=0; i < _X.size(); i++){
+        for (int i=0; i < size(); i++){
             cout << _X[i] << "  \t";
         };
         for (int i=0; i < _values.size(); i++){
@@ -73,10 +83,7 @@ public:
     };
 
     virtual ~Point(){
-        vector<double>::iterator cit = _X.begin();
-        while (cit != _X.end()) {
-            cit = _X.erase(cit);    
-        };
+        free(_X);
         vector<double>::iterator vit = _values.begin();
         while (vit != _values.end()) {
             vit = _values.erase(vit);    
@@ -271,12 +278,8 @@ public:
         _global_dist = _GKLS_class_global_dists[cls];
         _global_radius = _GKLS_class_global_radiuses[cls]; 
 
-        _lb = new Point();
-        _ub = new Point();
-        for (int i=0; i<_D; i++) {
-            _lb->add_coord(-1.);
-            _ub->add_coord(1.);
-        };
+        _lb = new Point(-1., _D);
+        _ub = new Point(1., _D);
 
         // _glob_x = new Point();  // Point where global function minimum is (should be list)
         _glob_f = -1.;          // Predefined global function minimum
@@ -307,21 +310,13 @@ public:
 
 
     double value(Point* point) {
-        // for (unsigned int i = 0; i < GKLS_dim; i++) {
-        //     cout << GKLS_minima.local_min[glob_idx][i] << " ";
-        // }
-        // cout << endl;
-
-        double p[_D];
-        for (int i; i < _D; i++) {
-            p[i] = point->_X[i];
-        };
-        // Convert Point to double point[_D];
-        return GKLS_D_func(p);
+        return GKLS_D_func(point->_X);
     };
 
-    // GKLS_free();
-    // GKLS_domain_free();
+    virtual ~GKLSFunction(){
+        GKLS_free();
+        GKLS_domain_free();
+    };
 };
 
 

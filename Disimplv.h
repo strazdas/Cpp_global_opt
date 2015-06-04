@@ -117,7 +117,7 @@ public:
        log_file << label << iteration << ":" << endl;
        for (int i=0; i < simplexes.size(); i++) {
            for (int j=0; j < simplexes[i]->_verts.size(); j++) {
-               for (int k=0; k < simplexes[i]->_verts[j]->_X.size(); k++){
+               for (int k=0; k < simplexes[i]->_verts[j]->size(); k++){
                     log_file << simplexes[i]->_verts[j]->_X[k] << " ";
                };
                log_file << "; ";
