@@ -1,5 +1,5 @@
 build:
 	@echo "==================================================================================="
 	clear
-	g++ Disimplv.cpp main.cpp -o main.out
+	g++ gkls.c rnd_gen.c main.cpp -o main.out
 	./main.out
