@@ -71,12 +71,15 @@ public:
     };
 
     void print(){
+        // cout.precision(17);
         cout << "       ";
         for (int i=0; i < size(); i++){
+            // cout << fixed << _X[i] << "  \t";
             cout << _X[i] << "  \t";
         };
         for (int i=0; i < _values.size(); i++){
             if (i == 0) { cout << "->\t"; };
+            // cout << fixed << _values[i] << "  ";
             cout << _values[i] << "  ";
         };
         cout << endl;
@@ -170,6 +173,7 @@ public:
     Function(){
         _calls = 0;
         _f_min = numeric_limits<int>::max();
+        _points = new Points();
     };
     string _name;
     int _D;
@@ -182,11 +186,11 @@ public:
     int _calls;
     double _f_min;
     Point* _x_min;
-    Points _points;
+    Points* _points;
 
 
     Point* get(double *c, int argc){
-        Point* cached_point = _points.get(c, argc);
+        Point* cached_point = _points->get(c, argc);
         if (cached_point) {
             return cached_point;
         } else {
@@ -196,15 +200,16 @@ public:
                 _f_min = val;
                 _x_min = p;
             };
+            // p->print();
             p->add_value(val);
             _calls += 1;
-            _points.add(p);
+            _points->add(p);
             return p;
         };
     };
 
     Point* get(Point* p){
-        Point* cached_point = _points.get(p);
+        Point* cached_point = _points->get(p);
         if (cached_point) {
             return cached_point;
         } else {
@@ -215,13 +220,13 @@ public:
             };
             p->add_value(val);
             _calls += 1;
-            _points.add(p);
+            _points->add(p);
             return p;
         };
     };
 
     void print(){
-        cout << "\nCalls: " << _calls << "   f_min: " << _f_min << endl;
+        cout << _name << "  calls: " << _calls << "   f_min: " << _f_min << endl;
     };
 
     double transform(Point* point, int i) {     // Transforms single point coordinate from [0,1] to [l,u]
@@ -273,6 +278,7 @@ public:
         double _GKLS_class_global_dists[] = {0.9, 0.9, 0.66, 0.9, 0.66, 0.9, 0.66, 0.66};
         double _GKLS_class_global_radiuses[] = {0.2, 0.1, 0.2, 0.2, 0.2, 0.2, 0.3, 0.2};
 
+        cls -= 1;
         _name = "GKLSFunction";
         _D = _GKLS_class_D[cls];
         _global_dist = _GKLS_class_global_dists[cls];
@@ -308,14 +314,26 @@ public:
     double _global_dist;
     double _global_radius;
 
+    double transform(Point* point, int i) {     // Transforms single point coordinate from [0,1] to [l,u]
+        return point->_X[i] * (_ub->_X[i]-_lb->_X[i]) + _lb->_X[i];  
+    };
 
     double value(Point* point) {
-        return GKLS_D_func(point->_X);
+        double* transformed_point = (double*) malloc((_D)*sizeof(double));
+        for (int i=0; i<_D; i++){
+            transformed_point[i] = transform(point,i);
+        };
+        double value = GKLS_D_func(transformed_point);
+        return value;
     };
 
     virtual ~GKLSFunction(){
-        GKLS_free();
-        GKLS_domain_free();
+        delete _lb;
+        delete _ub;
+        delete _points;
+        // Point* _glob_x;  // Point where global function minimum is (should be list)
+        // Point* _x_min;
+        // Points _points;
     };
 };
 

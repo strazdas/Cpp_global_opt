@@ -59,7 +59,14 @@ public:
                 _min_vert = _verts[a];
             };
         }; 
-        _metric = (_min_value - (func->_glob_f + 1e-8)) / _diameter;
+        // epsilon = 1e-4
+        double E;
+        if (1e-4 * fabs(func->_glob_f) > 1e-8) {
+            E = 1e-4 * fabs(func->_glob_f);
+        } else {
+            E = 1e-8;
+        };
+        _metric = (_min_value - (func->_glob_f + E)) / _diameter;
 
         //// Implement after Disimpl-v experiments are repeated
         // double _accurate_lower_bound;  // Find it by solving equation system. 
@@ -111,7 +118,7 @@ public:
         };
     };
 
-    static void log_partition(vector<Simplex*> simplexes, string label="Partition:", int iteration=0){
+    static void log_partition(vector<Simplex*> simplexes, vector<Simplex*> selected, string label="Partition:", int iteration=0){
        ofstream log_file; 
        log_file.open("log/partition.txt", ios::app);
        log_file << label << iteration << ":" << endl;
@@ -120,10 +127,21 @@ public:
                for (int k=0; k < simplexes[i]->_verts[j]->size(); k++){
                     log_file << simplexes[i]->_verts[j]->_X[k] << " ";
                };
-               log_file << "; ";
+               log_file << " (" << simplexes[i]->_verts[j]->_values[0]<<"); ";
+           };
+           log_file << " ("<< simplexes[i]->_diameter << "," << simplexes[i]->_min_value << ")" << endl;
+       };
+       log_file << "Selected:" << endl;
+       for (int i=0; i < selected.size(); i++) {
+           for (int j=0; j < selected[i]->_verts.size(); j++) {
+               for (int k=0; k < selected[i]->_verts[j]->size(); k++){
+                    log_file << selected[i]->_verts[j]->_X[k] << " ";
+               };
+               log_file << " (" << selected[i]->_verts[j]->_values[0]<<"); ";
            };
            log_file << endl;
        };
+
        log_file.close();
     };
 
@@ -358,7 +376,8 @@ public:
 
             vector<Simplex*> selected;
             // Is this OK?
-            if ((best_for_size.size() > 2) && (min_metric_simplex != best_for_size[best_for_size.size()-1])) {
+            // if (iteration == 24) {cout << (best_for_size.size() > 2) << ", " << (min_metric_simplex != best_for_size[best_for_size.size()-1]);};
+            if ((best_for_size.size() > 2) ) { // && (min_metric_simplex != best_for_size[best_for_size.size()-1])
                 vector<Simplex*> simplexes_below_line;
                 double a1 = best_for_size[0]->_diameter;
                 double b1 = best_for_size[0]->_min_value;
@@ -378,25 +397,24 @@ public:
                 selected = convex_hull(simplexes_below_line);  // Messes up simplexes_below_line
             } else {
                 selected = best_for_size;    // TODO: Why we divide all of them? Could divide only min_metrc_simplex.
+                                             // Because practiacally this case does not occur ever.
             };
 
             for (int i=0; i < selected.size(); i++) {
                 selected[i]->_should_be_divided = true;
             };
 
-            // Remove unneeded simplexes 
+            // Error: wrong stopping condition
             for (int i=0; i < selected.size() -1; i++) {
-                double a1 = selected[i]->_diameter;
-                double b1 = selected[i+1]->_min_value;
-                double a2 = selected[i]->_diameter;
-                double b2 = selected[i+1]->_min_value;
-
-                double slope = (b2 - b1)/(a2 - a1);
+                double a1 = selected[selected.size() - i -1]->_diameter;
+                double b1 = selected[selected.size() - i -1]->_min_value;
+                double a2 = selected[selected.size() - i -2]->_diameter;
+                double b2 = selected[selected.size() - i -2]->_min_value;
+                double slope = (b2 - double(b1))/(a2 - a1);
                 double bias = b1 - slope * a1;
 
-                if (bias > f_min - 0.0001 * fabs(f_min)) {
-                    // 
-                    selected[i]->_should_be_divided = false;
+                if (bias > f_min - 0.01*fabs(f_min)) {
+                    selected[selected.size() - i -2]->_should_be_divided = false;
                 };
             };
 
@@ -465,7 +483,6 @@ public:
     };
 
     void minimize(Function* func){
-
         _func = func;
         partition_feasable_region();
 
@@ -478,6 +495,7 @@ public:
             } else {
                 simplexes_to_divide = select_simplexes_to_divide(iteration);
             };
+            Simplex::log_partition(_partition, simplexes_to_divide, "\nIteration ", iteration);
 
             //// Test to check if simplexes are unique in _partition.
             // for (int i=0; i < _partition.size(); i++){
@@ -530,8 +548,8 @@ public:
             // Update counters and log the status
             iteration += 1;
             cout << iteration << ". Simplexes: " << _partition.size() << "  calls: " << _func->_calls << endl;
-            Simplex::log_partition(_partition, "\nIteration ", iteration);
-            // if (iteration >= 12) {
+
+            // if (iteration >= 4) {
             //     break;
             // };
         };
