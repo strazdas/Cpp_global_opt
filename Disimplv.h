@@ -204,7 +204,11 @@ public:
 
             Simplex* simpl = new Simplex();
             for (int i=0; i < n + 1; i++){
-                Point* point = _func->get(new Point(triangle[i], n)); 
+                Point* tmp_point = new Point(triangle[i], n);
+                Point* point = _func->get(tmp_point); 
+                if (tmp_point != point) {
+                    delete tmp_point;
+                };
                 simpl->add_vertex(point);
             };
             simpl->init_parameters(_func);
@@ -482,10 +486,10 @@ public:
                 c[i] = (simplex->_le_v1->_X[i] + simplex->_le_v2->_X[i]) / 2.;
             };
             Point* middle_point = _func->get(c, n);
-
             // Construct two new simplexes using this middle point.
             Simplex* left_simplex = new Simplex();
             Simplex* right_simplex = new Simplex();
+
             for (int i=0; i < simplex->size(); i++){
                 // Point* point = _func->get(new Point(triangle[i], n)); 
                 if (simplex->_verts[i] != simplex->_le_v1){
@@ -524,11 +528,8 @@ public:
             } else {
                 simplexes_to_divide = select_simplexes_to_divide(iteration);
             };
-            Simplex::log_partition(_partition, simplexes_to_divide, "\nIteration ", iteration);
-
+            // Simplex::log_partition(_partition, simplexes_to_divide, "\nIteration ", iteration);
             // test_unique_simplexes();
-            // Simplex::print(simplexes_to_divide, "\n  Simplexes to divide: >> ");
-            // cout << "<<<<<\n " << endl;
 
             // Divides selected simplexes
             vector<Simplex*> new_simplexes;
@@ -553,7 +554,7 @@ public:
             iteration += 1;
             // cout << iteration << ". Simplexes: " << _partition.size() << "  calls: " << _func->_calls << endl;
 
-            // if (iteration >= 9) {
+            // if (iteration >= 1) {
             //     break;
             // };
         };

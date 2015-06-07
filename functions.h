@@ -230,7 +230,6 @@ public:
         } else {
             Point* p = new Point(c, argc);
             update_meta(p);
-
             return p;
         };
     };
@@ -271,7 +270,9 @@ public:
 
     virtual double value(Point* point) = 0;
 
-    virtual ~Function(){};
+    virtual ~Function(){
+        delete _points;
+    };
 };
 
 class Branin : public Function {
@@ -323,25 +324,24 @@ public:
         _glob_f = -1.;          // Predefined global function minimum
         // _L = ;
 
-        assert(GKLS_set_default()== GKLS_OK);     // Standartiniai nustatymai
+        // assert(GKLS_set_default()== GKLS_OK);     // Standartiniai nustatymai
 
         GKLS_dim = _D;
         GKLS_global_dist = _global_dist;
         GKLS_global_radius = _global_radius;
         GKLS_num_minima = 10;
         GKLS_global_value = GKLS_GLOBAL_MIN_VALUE;
-        for (unsigned int i = 0; i < GKLS_dim; i++) {
-            GKLS_domain_left[i] = -1;
-            GKLS_domain_right[i] = 1;
-        };
         assert(GKLS_domain_alloc() == GKLS_OK);
+        // for (unsigned int i = 0; i < GKLS_dim; i++) {
+        //     GKLS_domain_left[i] = -1;
+        //     GKLS_domain_right[i] = 1;
+        // };
         assert(GKLS_parameters_check() == GKLS_OK);
         assert(GKLS_arg_generate(function_id) == GKLS_OK);
         int n = GKLS_glob.num_global_minima;
         assert(n == 1);
         int glob_idx = 1;
         assert(GKLS_minima.f[glob_idx] == GKLS_global_value);
-
         _glob_x = new Point(_D);  // Point where global function minimum is (should be list)
         for (int i=0; i < _D; i++) {
             _glob_x->_X[i] = (GKLS_minima.local_min[glob_idx][i] - _lb->_X[i]) / (_ub->_X[i]-_lb->_X[i]);
@@ -356,7 +356,7 @@ public:
     };
 
     double value(Point* point) {
-        double* transformed_point = (double*) malloc((_D)*sizeof(double));
+        double transformed_point[_D];
         for (int i=0; i<_D; i++){
             transformed_point[i] = transform(point,i);
         };
@@ -367,11 +367,7 @@ public:
     virtual ~GKLSFunction(){
         delete _lb;
         delete _ub;
-        delete _points;
         delete _glob_x;
-        // Point* _glob_x;  // Point where global function minimum is (should be list)
-        // Point* _x_min;
-        // Points _points;
     };
 };
 
