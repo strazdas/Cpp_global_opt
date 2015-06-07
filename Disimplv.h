@@ -433,7 +433,6 @@ public:
                 selected[i]->_should_be_divided = true;
             };
 
-            // Error: wrong stopping condition
             // Remove simplexes which do not satisfy condition:   f - slope*d > f_min - epsilon*abs(f_min)
             for (int i=0; i < selected.size() -1; i++) {
                 double a1 = selected[selected.size() - i -1]->_diameter;
@@ -443,7 +442,7 @@ public:
                 double slope = (b2 - double(b1))/(a2 - a1);
                 double bias = b1 - slope * a1;
 
-                if (bias > f_min - 0.01*fabs(f_min)) {
+                if (bias > f_min - 0.0001*fabs(f_min)) {
                     selected[selected.size() - i -2]->_should_be_divided = false;
                 };
             };
@@ -552,7 +551,7 @@ public:
 
             // Update counters and log the status
             iteration += 1;
-            cout << iteration << ". Simplexes: " << _partition.size() << "  calls: " << _func->_calls << endl;
+            // cout << iteration << ". Simplexes: " << _partition.size() << "  calls: " << _func->_calls << endl;
 
             // if (iteration >= 9) {
             //     break;

@@ -203,7 +203,7 @@ public:
                 max_distance = dist;
             };
         };
-        return dist;
+        return max_distance;
     };
 
     void update_meta(Point* p) {
@@ -213,10 +213,8 @@ public:
             _x_min = p;
         };
         double distance_to_glob_x = get_distance_to_glob_x(p);
-        cout << _distance_to_glob_x << endl;
         if (distance_to_glob_x < _distance_to_glob_x) {
             _distance_to_glob_x = distance_to_glob_x;
-            cout << "Better distance: " << _distance_to_glob_x << endl;
             _x_nearest_to_glob_x = p;
         };
 
@@ -315,8 +313,7 @@ public:
         _D = _GKLS_class_D[cls];
         _global_dist = _GKLS_class_global_dists[cls];
         _global_radius = _GKLS_class_global_radiuses[cls]; 
-        // _delta = sqrt(_GKLS_class_detlas[cls], _D);
-        _delta = 0.01;
+        _delta = pow(_GKLS_class_detlas[cls], 1./_D);
 
         _lb = new Point(-1., _D);
         _ub = new Point(1., _D);
@@ -347,7 +344,7 @@ public:
 
         _glob_x = new Point(_D);  // Point where global function minimum is (should be list)
         for (int i=0; i < _D; i++) {
-            _glob_x->_X[i] = GKLS_minima.local_min[glob_idx][i];
+            _glob_x->_X[i] = (GKLS_minima.local_min[glob_idx][i] - _lb->_X[i]) / (_ub->_X[i]-_lb->_X[i]);
         };
     };
 
