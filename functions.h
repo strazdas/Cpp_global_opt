@@ -22,7 +22,10 @@ class Point {
     Point(const Point& other){}
     Point& operator=(const Point& other){};
 public:
-    Point(){};
+    Point(int D){
+        _D = D;
+        _X = (double*) malloc((D)*sizeof(double));
+    };
     Point(int *c, int argc){
         _D = argc;
         _X = (double*) malloc((argc)*sizeof(double));
@@ -180,14 +183,47 @@ public:
     Point* _lb;
     Point* _ub;
     Point* _glob_x;  // Point where global function minimum is (should be list)
+    double _delta;   // Accuracy for stoping criteria based on distance from glob_x
     double _glob_f;  // Predefined global function minimum
     double _L;       // Lipschitz constant
 
     int _calls;
-    double _f_min;
-    Point* _x_min;
+    double _f_min;  // Best known function value
+    Point* _x_min;  // Point where best known function value is
+    double _distance_to_glob_x;  // Infinity distance to _glob_x from nearest known point
+    Point* _x_nearest_to_glob_x;  // Nearest to _glob_x known point (infinity distance) 
     Points* _points;
 
+    double get_distance_to_glob_x(Point* p) {
+        double max_distance = 0;
+        double dist = 0;
+        for (int i=0; i<_D; i++) {
+            dist = fabs(p->_X[i] - _glob_x->_X[i]);
+            if (dist > max_distance) {
+                max_distance = dist;
+            };
+        };
+        return dist;
+    };
+
+    void update_meta(Point* p) {
+        double val = value(p);
+        if (_f_min > val) {
+            _f_min = val;
+            _x_min = p;
+        };
+        double distance_to_glob_x = get_distance_to_glob_x(p);
+        cout << _distance_to_glob_x << endl;
+        if (distance_to_glob_x < _distance_to_glob_x) {
+            _distance_to_glob_x = distance_to_glob_x;
+            cout << "Better distance: " << _distance_to_glob_x << endl;
+            _x_nearest_to_glob_x = p;
+        };
+
+        p->add_value(val);
+        _calls += 1;
+        _points->add(p);
+    };
 
     Point* get(double *c, int argc){
         Point* cached_point = _points->get(c, argc);
@@ -195,15 +231,8 @@ public:
             return cached_point;
         } else {
             Point* p = new Point(c, argc);
-            double val = value(p);
-            if (_f_min > val) {
-                _f_min = val;
-                _x_min = p;
-            };
-            // p->print();
-            p->add_value(val);
-            _calls += 1;
-            _points->add(p);
+            update_meta(p);
+
             return p;
         };
     };
@@ -213,14 +242,7 @@ public:
         if (cached_point) {
             return cached_point;
         } else {
-            double val = value(p);
-            if (_f_min > val) {
-                _f_min = val;
-                _x_min = p;
-            };
-            p->add_value(val);
-            _calls += 1;
-            _points->add(p);
+            update_meta(p);
             return p;
         };
     };
@@ -238,6 +260,15 @@ public:
             return (_f_min - _glob_f) / fabs(_glob_f) * 100.; 
         };
         return _f_min * 100.; 
+    };
+
+    bool is_accurate_enougth(){
+        for (int i=0; i<_D; i++) {
+            if (_delta * (_ub->_X[i] - _lb->_X[i]) < fabs(_x_nearest_to_glob_x->_X[i] - _glob_x->_X[i])) { // Infinity norm
+                return false;
+            };
+        };
+        return true; 
     };
 
     virtual double value(Point* point) = 0;
@@ -277,17 +308,21 @@ public:
         int _GKLS_class_D[] = {2, 2, 3, 3, 4, 4, 5, 5};
         double _GKLS_class_global_dists[] = {0.9, 0.9, 0.66, 0.9, 0.66, 0.9, 0.66, 0.66};
         double _GKLS_class_global_radiuses[] = {0.2, 0.1, 0.2, 0.2, 0.2, 0.2, 0.3, 0.2};
+        double _GKLS_class_detlas[] = {1e-4, 1e-4, 1e-6, 1e-6, 1e-6, 1e-6, 1e-7, 1e-7};
 
         cls -= 1;
         _name = "GKLSFunction";
         _D = _GKLS_class_D[cls];
         _global_dist = _GKLS_class_global_dists[cls];
         _global_radius = _GKLS_class_global_radiuses[cls]; 
+        // _delta = sqrt(_GKLS_class_detlas[cls], _D);
+        _delta = 0.01;
 
         _lb = new Point(-1., _D);
         _ub = new Point(1., _D);
+        _x_nearest_to_glob_x = _lb;
+        _distance_to_glob_x = numeric_limits<double>::max();
 
-        // _glob_x = new Point();  // Point where global function minimum is (should be list)
         _glob_f = -1.;          // Predefined global function minimum
         // _L = ;
 
@@ -309,6 +344,11 @@ public:
         assert(n == 1);
         int glob_idx = 1;
         assert(GKLS_minima.f[glob_idx] == GKLS_global_value);
+
+        _glob_x = new Point(_D);  // Point where global function minimum is (should be list)
+        for (int i=0; i < _D; i++) {
+            _glob_x->_X[i] = GKLS_minima.local_min[glob_idx][i];
+        };
     };
 
     double _global_dist;
@@ -331,6 +371,7 @@ public:
         delete _lb;
         delete _ub;
         delete _points;
+        delete _glob_x;
         // Point* _glob_x;  // Point where global function minimum is (should be list)
         // Point* _x_min;
         // Points _points;

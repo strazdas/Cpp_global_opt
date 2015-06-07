@@ -139,7 +139,7 @@ public:
                };
                log_file << " (" << selected[i]->_verts[j]->_values[0]<<"); ";
            };
-           log_file << endl;
+           log_file << " ("<< selected[i]->_diameter << "," << selected[i]->_min_value << ")" << endl;
        };
 
        log_file.close();
@@ -242,6 +242,35 @@ public:
         };
         return v - 1;
     };
+
+    void test_unique_simplexes(){
+        //// Test to check if simplexes are unique in _partition.
+        for (int i=0; i < _partition.size(); i++){
+            for (int j=0; j < _partition.size(); j++){
+                if (i > j) {
+                    // Compare all vertexes
+                    bool same = true;
+                    for (int k=0; k < _partition[i]->_verts.size(); k++){
+                        bool found_same_vert = false;
+                        for (int l=0; l < _partition[j]->_verts.size(); l++){
+                            if (_partition[i]->_verts[k] == _partition[j]->_verts[l]){
+                                found_same_vert = true;
+                            };
+                        };
+                        if (!found_same_vert) {
+                            same = false;
+                        };
+                    };
+                    if (same){
+                        cout << "NOT UNIQUE PARTITION  " << i << "==" << j << endl;
+                        _partition[i]->print();
+                        _partition[j]->print();
+                    };
+                };
+            };
+        };
+    };
+
 
     double Determinant(double **a, int n) {
        /* Taken from http://paulbourke.net/miscellaneous/determinant/ */
@@ -405,6 +434,7 @@ public:
             };
 
             // Error: wrong stopping condition
+            // Remove simplexes which do not satisfy condition:   f - slope*d > f_min - epsilon*abs(f_min)
             for (int i=0; i < selected.size() -1; i++) {
                 double a1 = selected[selected.size() - i -1]->_diameter;
                 double b1 = selected[selected.size() - i -1]->_min_value;
@@ -487,7 +517,7 @@ public:
         partition_feasable_region();
 
         int iteration = 0;
-        while (_func->_calls <= _max_calls && _func->pe() > _min_pe){
+        while (_func->_calls <= _max_calls && !_func->is_accurate_enougth()) { // _func->pe() > _min_pe){
             // Selects simplexes to divide
             vector<Simplex*> simplexes_to_divide;
             if (iteration == 0) {
@@ -497,32 +527,7 @@ public:
             };
             Simplex::log_partition(_partition, simplexes_to_divide, "\nIteration ", iteration);
 
-            //// Test to check if simplexes are unique in _partition.
-            // for (int i=0; i < _partition.size(); i++){
-            //     for (int j=0; j < _partition.size(); j++){
-            //         if (i > j) {
-            //             // Compare all vertexes
-            //             bool same = true;
-            //             for (int k=0; k < _partition[i]->_verts.size(); k++){
-            //                 bool found_same_vert = false;
-            //                 for (int l=0; l < _partition[j]->_verts.size(); l++){
-            //                     if (_partition[i]->_verts[k] == _partition[j]->_verts[l]){
-            //                         found_same_vert = true;
-            //                     };
-            //                 };
-            //                 if (!found_same_vert) {
-            //                     same = false;
-            //                 };
-            //             };
-            //             if (same){
-            //                 cout << "NOT UNIQUE PARTITION  " << i << "==" << j << endl;
-            //                 _partition[i]->print();
-            //                 _partition[j]->print();
-            //             };
-            //         };
-            //     };
-            // };
-
+            // test_unique_simplexes();
             // Simplex::print(simplexes_to_divide, "\n  Simplexes to divide: >> ");
             // cout << "<<<<<\n " << endl;
 
@@ -549,7 +554,7 @@ public:
             iteration += 1;
             cout << iteration << ". Simplexes: " << _partition.size() << "  calls: " << _func->_calls << endl;
 
-            // if (iteration >= 4) {
+            // if (iteration >= 9) {
             //     break;
             // };
         };
