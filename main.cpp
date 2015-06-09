@@ -19,12 +19,12 @@ int main() {
     GKLSFunction* func;
     Disimplv* alg;
     int n = 100;
-    for (int cls=5; cls <= 5; cls++) {
+    for (int cls=6; cls <= 8; cls++) {
         int calls[100];
         int subregions[100];
         for (int fid=1; fid <= n; fid++) {
     //         // fid = 94;
-            alg = new Disimplv(1.0, 30000);
+            alg = new Disimplv(1.0, 1000000);
             func = new GKLSFunction(cls, fid);    // Class1, id80
             alg->minimize(func);
             cout << fid << ". ";
@@ -33,10 +33,10 @@ int main() {
             subregions[fid-1] = alg->_partition.size();
             delete alg;
             delete func;
-            break;
+            // break;
         };
-    //     // cout << "Class " << cls << " "; 
-    //     // print_stats(calls, subregions, n);
+        cout << "Class " << cls << " "; 
+        print_stats(calls, subregions, n);
     };
     GKLS_free();
     GKLS_domain_free();

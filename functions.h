@@ -97,6 +97,236 @@ public:
     };
 };
 
+
+
+class PointTreeNode {  // Binary balancing tree or simply linked list
+    PointTreeNode(const PointTreeNode& other){}
+    PointTreeNode& operator=(const PointTreeNode& other){}
+public:                
+    PointTreeNode(){
+        _left = 0;
+        _right = 0;
+        _parent = 0;
+        _height = 1;
+        _value = numeric_limits<double>::max();
+    };
+    PointTreeNode(double value){
+        _left = 0;
+        _right = 0;
+        _value = value;
+        _height = 1;
+    };
+    PointTreeNode* _parent;
+    PointTreeNode* _left;
+    PointTreeNode* _right;
+    int _height;
+    double _value;
+    // int dim;             // Dimension id (0, ..., n-1)
+    // PointTree* root;
+    // PointTree* subtree;  // Next dimension head
+    // Point* point;
+
+    void print(){
+        if (_left != 0) { cout << "l"; _left->print(); };
+        cout << _value << "("<< _height << ")";
+        if (_right != 0) { cout << "r"; _right->print(); };
+    };
+
+    virtual ~PointTreeNode(){};
+};
+
+class PointTree{ // Head of the tree
+    PointTree(const PointTree& other){}
+    PointTree& operator=(const PointTree& other){}
+public:
+    PointTree(){
+         _tree_root = 0;
+    };
+    PointTreeNode* _tree_root;
+    // Point* get_or_insert(Point) {};
+    // check if returned same, if not - delete the old one
+
+    void update_height(PointTreeNode* node, bool recursive=true) {   // Increases parent height if needed
+        int lh = 0;
+        int rh = 0;
+        if (node->_left != 0) { lh = node->_left->_height; }; 
+        if (node->_right != 0) { rh = node->_right->_height; };
+        if (lh > rh) {
+            node->_height = lh + 1;
+        } else {
+            node->_height = rh + 1;
+        };
+        if (recursive) {
+            if (node->_parent != 0) {
+                update_height(node->_parent);
+            };
+        };
+    };
+
+    void left_right_rebalance(PointTreeNode* node) {
+        PointTreeNode* diatteched_node;
+        // node left right  <-  node left right left 
+        diatteched_node = node->_left->_right;
+        node->_left->_right = node->_left->_right->_left;
+        if (node->_left->_right != 0) { node->_left->_right->_parent = node->_left; };
+        // Diatteched left = node->_left
+        diatteched_node->_left = node->_left;
+        node->_left->_parent = diatteched_node;
+        // node left  <-  node left right
+        node->_left = diatteched_node;
+        diatteched_node->_parent = node;
+        // Update heights
+        update_height(node);
+        update_height(diatteched_node);
+        update_height(diatteched_node->_left);
+    };
+    void left_left_rebalance(PointTreeNode* node) {
+        PointTreeNode* diatteched;
+        diatteched = node->_left;
+        node->_left = node->_left->_right;
+        if (node->_left != 0) { node->_left->_parent = node; };  
+        diatteched->_parent = node->_parent;
+        if (node->_parent != 0) {
+            if (node->_parent->_left == node) {
+                node->_parent->_left = diatteched;
+            } else {
+                node->_parent->_right = diatteched;
+            };
+        } else {
+            _tree_root = diatteched;
+        };
+        diatteched->_right = node;
+        node->_parent = diatteched;
+        // Fix heights
+        // _tree_root->print();
+        update_height(node);
+        update_height(diatteched);
+    };
+    void right_left_rebalance(PointTreeNode* node) {
+        PointTreeNode* diatteched_node;
+        // node left right  <-  node left right left 
+        diatteched_node = node->_right->_left;
+        node->_right->_left = node->_right->_left->_right;
+        if (node->_right->_left != 0) { node->_right->_left->_parent = node->_right; };
+        // Diatteched left = node->_left
+        diatteched_node->_right = node->_right;
+        node->_right->_parent = diatteched_node;
+        // node left  <-  node left right
+        node->_right = diatteched_node;
+        diatteched_node->_parent = node;
+        // Fix heights
+        update_height(node);
+        update_height(diatteched_node);
+        update_height(diatteched_node->_right);
+    };
+    void right_right_rebalance(PointTreeNode* node) {
+        PointTreeNode* diatteched;
+        diatteched = node->_right;
+        node->_right = node->_right->_left;
+        if (node->_right != 0) { node->_right->_parent = node; };
+        diatteched->_parent = node->_parent;                       
+        if (node->_parent != 0) {
+            if (node->_parent->_left == node) {
+                node->_parent->_left = diatteched;
+            } else {
+                node->_parent->_right = diatteched;
+            };
+        } else {
+            _tree_root = diatteched;
+        };
+        diatteched->_left = node;
+        node->_parent = diatteched;
+        // Fix heights
+        update_height(node);
+        update_height(diatteched);
+    };
+
+    void check_if_balanced(PointTreeNode* node) {
+        int lh = 0;
+        int rh = 0;
+        int llh = 0;
+        int lrh = 0;
+        int rlh = 0;
+        int rrh = 0;
+        if (node->_left != 0) {
+            lh = node->_left->_height;
+            if (node->_left->_left != 0) { llh = node->_left->_left->_height; };
+            if (node->_left->_right != 0) { lrh = node->_left->_right->_height; };
+        };
+        if (node->_right != 0) {
+            rh = node->_right->_height;
+            if (node->_right->_left != 0) { rlh = node->_right->_left->_height; };
+            if (node->_right->_right != 0) { rrh = node->_right->_right->_height; };
+        };
+        if (abs(rh - lh) > 1) {
+            // cout << "\nNot balanced" << " " << lh << "(" << llh << "," << lrh<< ")"<< " " << rh << "(" << rlh <<"," << rrh << ")"<< endl;
+            if (rh > lh) {
+                if (rrh > rlh) {
+                    right_right_rebalance(node);
+                } else {
+                    right_left_rebalance(node);
+                    right_right_rebalance(node);
+                };
+            };
+            if (rh < lh) {
+                if (llh > lrh) {
+                    left_left_rebalance(node);
+                } else {
+                    left_right_rebalance(node);
+                    left_left_rebalance(node);
+                };
+            };
+        };
+        if (node->_parent != 0) {
+            check_if_balanced(node->_parent);
+        };
+    };
+
+    void add(double value){
+        // Rasti panašiausią reikšmę ir pridėti kaip jos vaiką
+        PointTreeNode* node = _tree_root;
+        if (node == 0) {
+            node = new PointTreeNode(value);
+            _tree_root = node;
+        } else {
+            while (true) {
+                if (value > node->_value) {
+                    if (node->_right == 0) {
+                        node->_right = new PointTreeNode(value);
+                        node->_right->_parent = node;
+                        update_height(node->_right);
+                        node = node->_right;
+                        break;
+                    };
+                    node = node->_right;
+                } else {
+                    if (node->_left == 0) {
+                        node->_left = new PointTreeNode(value);
+                        node->_left->_parent = node;
+                        update_height(node->_left);
+                        node = node->_left;
+                        break;
+                    };
+                    node = node->_left;
+                };
+            };
+        };
+        check_if_balanced(node);
+
+        // Check if ancestors are balanced.
+        // Subalansuoja medį
+    };
+    void print(){
+        _tree_root->print();
+        cout << endl;
+    };
+    virtual ~PointTree(){
+        // delete _tree_root;
+    };
+};
+
+
+
 class Points {  // Binary balancing tree or simply linked list
     Points(const Points& other){}
     Points& operator=(const Points& other){}
@@ -295,6 +525,33 @@ public:
         double part1 = pow((x2 - 5./(4*pow(M_PI, 2))*pow(x1,2) + 5./M_PI*x1 -6), 2);
         double part2 = 10.*(1. - 1./(8*M_PI))*cos(x1) + 10.;
         return part1 + part2;
+    };
+};
+
+class RastriginShrinked: public Function {
+    RastriginShrinked(const RastriginShrinked& other){};
+    RastriginShrinked& operator=(const RastriginShrinked& other){};
+public:
+    RastriginShrinked(): Function(){
+        _name = "RastriginShrinked";
+        _D = 2;
+        _lb = new Point(-0.5, -0.5);
+        _ub = new Point(1.25, 1.25);
+        _glob_x = new Point(0., 0.);
+        _glob_f = 0;          
+        _L = 15.6204993518;
+    };
+
+    double value(Point* point) {
+        double x1 = transform(point, 0); 
+        double x2 = transform(point, 1); 
+        return 2*10 + 4*pow(x1,2) + 4*pow(x2,2) - 10*(cos(2*M_PI*x1) + cos(2*M_PI*x2));
+    };
+
+    virtual ~RastriginShrinked(){
+        delete _lb;
+        delete _ub;
+        delete _glob_x;
     };
 };
 
