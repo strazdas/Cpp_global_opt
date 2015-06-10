@@ -62,13 +62,6 @@ public:
         _values.push_back(value);
     };
 
-    // double* to_double(point){    // Todo: use double x[_D] for _X instead of vector. Won't need this method when using GKLS function generator
-    //     for (int i=0; i < _X.size() ; i++) {
-    //         point[i] = _X[i];
-    //     };
-    //     return point;
-    // };
-
     int size(){
         return _D;
     };
@@ -97,34 +90,30 @@ public:
     };
 };
 
-
+class PointTree;
 
 class PointTreeNode {  // Binary balancing tree or simply linked list
     PointTreeNode(const PointTreeNode& other){}
     PointTreeNode& operator=(const PointTreeNode& other){}
 public:                
-    PointTreeNode(){
-        _left = 0;
-        _right = 0;
-        _parent = 0;
+    PointTreeNode(double value=numeric_limits<double>::max()){
         _height = 1;
-        _value = numeric_limits<double>::max();
-    };
-    PointTreeNode(double value){
-        _left = 0;
-        _right = 0;
         _value = value;
-        _height = 1;
+        _parent = 0;
+        _left = 0;
+        _right = 0;
+        _subtree = 0;
+        _prev_dim_node = 0;
+        _point = 0;
     };
+    int _height;
+    double _value;
     PointTreeNode* _parent;
     PointTreeNode* _left;
     PointTreeNode* _right;
-    int _height;
-    double _value;
-    // int dim;             // Dimension id (0, ..., n-1)
-    // PointTree* root;
-    // PointTree* subtree;  // Next dimension head
-    // Point* point;
+    PointTree* _subtree;     // Next dimension head
+    PointTreeNode* _prev_dim_node;
+    Point* _point;           // Only last dimension node will have _point != 0;
 
     void print(){
         if (_left != 0) { cout << "l"; _left->print(); };
@@ -141,12 +130,16 @@ class PointTree{ // Head of the tree
 public:
     PointTree(){
          _tree_root = 0;
+         _dim = 1;
+    };
+    PointTree(int dim){
+         _tree_root = 0;
+         _dim = dim;
     };
     PointTreeNode* _tree_root;
-    // Point* get_or_insert(Point) {};
-    // check if returned same, if not - delete the old one
+    int _dim;
 
-    void update_height(PointTreeNode* node, bool recursive=true) {   // Increases parent height if needed
+    void update_height(PointTreeNode* node) {
         int lh = 0;
         int rh = 0;
         if (node->_left != 0) { lh = node->_left->_height; }; 
@@ -156,10 +149,9 @@ public:
         } else {
             node->_height = rh + 1;
         };
-        if (recursive) {
-            if (node->_parent != 0) {
-                update_height(node->_parent);
-            };
+        // Also update all ancestors heights
+        if (node->_parent != 0) {
+            update_height(node->_parent);
         };
     };
 
@@ -197,8 +189,7 @@ public:
         };
         diatteched->_right = node;
         node->_parent = diatteched;
-        // Fix heights
-        // _tree_root->print();
+        // Update heights
         update_height(node);
         update_height(diatteched);
     };
@@ -214,7 +205,7 @@ public:
         // node left  <-  node left right
         node->_right = diatteched_node;
         diatteched_node->_parent = node;
-        // Fix heights
+        // Update heights
         update_height(node);
         update_height(diatteched_node);
         update_height(diatteched_node->_right);
@@ -236,7 +227,7 @@ public:
         };
         diatteched->_left = node;
         node->_parent = diatteched;
-        // Fix heights
+        // Update heights
         update_height(node);
         update_height(diatteched);
     };
@@ -259,7 +250,7 @@ public:
             if (node->_right->_right != 0) { rrh = node->_right->_right->_height; };
         };
         if (abs(rh - lh) > 1) {
-            // cout << "\nNot balanced" << " " << lh << "(" << llh << "," << lrh<< ")"<< " " << rh << "(" << rlh <<"," << rrh << ")"<< endl;
+            // Not balanced, so rebalance
             if (rh > lh) {
                 if (rrh > rlh) {
                     right_right_rebalance(node);
@@ -282,39 +273,65 @@ public:
         };
     };
 
-    void add(double value){
-        // Rasti panašiausią reikšmę ir pridėti kaip jos vaiką
-        PointTreeNode* node = _tree_root;
-        if (node == 0) {
-            node = new PointTreeNode(value);
-            _tree_root = node;
+    Point* process_next_dimension(PointTreeNode* node, Point* point){
+        // Creates next dimension tree if needed and adds point to it
+        // Its last dimension
+        if (point->_D == _dim) {  // Don't need next dimension
+            if (node->_point == 0) {    // Save or return the point
+                node->_point = point;
+                return 0;
+            } else {
+                return node->_point;
+            };
+        };
+        // Its not last dimension
+        if (node->_subtree == 0) {  // Create subtree if it doesn't already exist
+            node->_subtree = new PointTree(_dim + 1);
+        };
+        Point* found_point = node->_subtree->add(point);  // Get or insert point to the subtree
+        if (found_point != 0) {  // We got point so return it 
+            return found_point;
         } else {
-            while (true) {
+            return 0;  // We inserted point
+        };
+    };
+
+    Point* add(Point* point){
+        // Get same point or insert given (if inserted returns 0)
+        PointTreeNode* node = _tree_root;
+        double value = point->_X[_dim -1];
+        if (_tree_root == 0) {  // Create first tree node
+            _tree_root = new PointTreeNode(value);
+            node = _tree_root;
+            process_next_dimension(node, point);
+        } else {
+            while (true) {  // Walk through tree
                 if (value > node->_value) {
                     if (node->_right == 0) {
                         node->_right = new PointTreeNode(value);
                         node->_right->_parent = node;
                         update_height(node->_right);
-                        node = node->_right;
-                        break;
+                        process_next_dimension(node->_right, point);
+                        check_if_balanced(node->_right);
+                        return 0;
                     };
                     node = node->_right;
-                } else {
+                } else if (value < node->_value) {
                     if (node->_left == 0) {
                         node->_left = new PointTreeNode(value);
                         node->_left->_parent = node;
                         update_height(node->_left);
-                        node = node->_left;
-                        break;
+                        process_next_dimension(node->_left, point);
+                        check_if_balanced(node->_left);
+                        return 0;
                     };
                     node = node->_left;
+                } else {
+                    // Node value matches given point value, move to next dimension.
+                    return process_next_dimension(node, point);
                 };
             };
         };
-        check_if_balanced(node);
-
-        // Check if ancestors are balanced.
-        // Subalansuoja medį
     };
     void print(){
         _tree_root->print();
