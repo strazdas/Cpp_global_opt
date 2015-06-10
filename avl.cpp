@@ -1,3 +1,4 @@
+/* Testing PointTree class implementation */
 #include <iostream>
 #include "Disimplv.h"
 

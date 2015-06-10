@@ -103,7 +103,6 @@ public:
         _left = 0;
         _right = 0;
         _subtree = 0;
-        _prev_dim_node = 0;
         _point = 0;
     };
     int _height;
@@ -112,7 +111,6 @@ public:
     PointTreeNode* _left;
     PointTreeNode* _right;
     PointTree* _subtree;     // Next dimension head
-    PointTreeNode* _prev_dim_node;
     Point* _point;           // Only last dimension node will have _point != 0;
 
     void print(){
@@ -121,10 +119,15 @@ public:
         if (_right != 0) { cout << "r"; _right->print(); };
     };
 
-    virtual ~PointTreeNode(){};
+    virtual ~PointTreeNode(); // {
+    //     if (_left != 0) { delete _left; };
+    //     if (_right != 0) { delete _right; };
+    //     if (_point != 0) { delete _point; };
+    //     if (_subtree != 0) { delete _subtree; };
+    // };
 };
 
-class PointTree{ // Head of the tree
+class PointTree { // Head of the tree
     PointTree(const PointTree& other){}
     PointTree& operator=(const PointTree& other){}
 public:
@@ -338,8 +341,15 @@ public:
         cout << endl;
     };
     virtual ~PointTree(){
-        // delete _tree_root;
+        delete _tree_root;
     };
+};
+
+PointTreeNode::~PointTreeNode() {
+    if (_left != 0) { delete _left; };
+    if (_right != 0) { delete _right; };
+    if (_point != 0) { delete _point; };
+    if (_subtree != 0) { delete _subtree; };
 };
 
 
@@ -423,7 +433,7 @@ public:
     Function(){
         _calls = 0;
         _f_min = numeric_limits<int>::max();
-        _points = new Points();
+        _points = new PointTree(); // new Points();
     };
     string _name;
     int _D;
@@ -439,7 +449,7 @@ public:
     Point* _x_min;  // Point where best known function value is
     double _distance_to_glob_x;  // Infinity distance to _glob_x from nearest known point
     Point* _x_nearest_to_glob_x;  // Nearest to _glob_x known point (infinity distance) 
-    Points* _points;
+    PointTree* _points;  // Points* _points;
 
     double get_distance_to_glob_x(Point* p) {
         double max_distance = 0;
@@ -467,22 +477,22 @@ public:
 
         p->add_value(val);
         _calls += 1;
-        _points->add(p);
     };
 
     Point* get(double *c, int argc){
-        Point* cached_point = _points->get(c, argc);
+        Point* p = new Point(c, argc);
+        Point* cached_point = _points->add(p);
         if (cached_point) {
+            delete p;
             return cached_point;
         } else {
-            Point* p = new Point(c, argc);
             update_meta(p);
             return p;
         };
     };
 
-    Point* get(Point* p){
-        Point* cached_point = _points->get(p);
+    Point* get(Point* p){  // Get Point with its function value
+        Point* cached_point = _points->add(p);
         if (cached_point) {
             return cached_point;
         } else {
