@@ -31,10 +31,10 @@ int main (int argc, char *argv[]) {
         fid_till = 100;
     } else {
         MPI::Init();
-        p = MPI::COMM_WORLD.Get_size();
-        id = MPI::COMM_WORLD.Get_rank();
-        fid_from = id * 10;
-        fid_till = (id + 1) * 10; 
+        pool = MPI::COMM_WORLD.Get_size();
+        pid = MPI::COMM_WORLD.Get_rank();
+        fid_from = 1 + pid * 10;
+        fid_till = (pid + 1) * 10; 
     };
         
     GKLSFunction* func;
@@ -49,8 +49,8 @@ int main (int argc, char *argv[]) {
 
         // Save results to file
         stringstream filename; 
-        mkdir(("results/" + alg->_name).c_str(), 0777);  // Tries to create directory 
-        filename << "results/" << alg->_name << "/" << cls << "_" << fid;
+        mkdir(("/home/albertas/C++_global_opt/results/" + alg->_name).c_str(), 0777);  // Tries to create directory 
+        filename << "/home/albertas/C++_global_opt/results/" << alg->_name << "/" << cls << "_" << fid;
         result_file.open(filename.str().c_str(), ios::app);
         result_file << (*alg) << endl;
         result_file.close();
@@ -58,5 +58,7 @@ int main (int argc, char *argv[]) {
         delete alg;
         delete func;
     };
+
+    if (cls >= 5) { MPI::Finalize(); };
     return 0;
 };
