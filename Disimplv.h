@@ -8,6 +8,7 @@
 #include <math.h> 
 #include <limits>
 #include "functions.h"
+#include <sys/time.h>
 
 using namespace std;
 
@@ -150,33 +151,72 @@ public:
     };  
 };
 // typedef vector<Simplex*> Simplexes;
+typedef unsigned long long timestamp_t;
 
-
-class Disimplv {
-    Disimplv(const Disimplv& other){};
-    Disimplv& operator=(const Disimplv& other){};
+class Algorithm{
+    Algorithm(const Algorithm& other){};
+    Algorithm& operator=(const Algorithm& other){};
 public:
-    // Disimplv(){};
-    Disimplv(double min_pe, int max_calls){
-        _min_pe = min_pe;
-        _max_calls = max_calls;
-        ofstream log_file; 
-        log_file.open("log/partition.txt");
-        log_file.close();
-    };
-    double _min_pe;
+    Algorithm(){};
+    string _name;
+    string _stop_criteria;
     int _max_calls;
+    double _min_pe;
+    double _duration;   // Duration in seconds
     vector<Simplex*> _partition;
     vector<Simplex*> _all_simplexes;
     Function* _func;
-//     Disimplv(Function f, Point lb, Point ub, double error, )
-//     Disimplv(int N, int max_calls, , Function f, double L, Points& D){
-//         _N = N; _max_calls = max_calls; _error = error; _f = f; _L = L; _D = D;
-//     }
-//     double _L;      // Lipschitz constant
-//     Points* _D;
-// 
-    void partition_feasable_region(){
+
+    /* Utility functions */
+    double l2norm(Point* p1, Point* p2) {
+        double squared_sum = 0;
+        for (int i=0; i < p1->size(); i++){
+            squared_sum += pow(p1->_X[i] - p2->_X[i], 2);
+        };
+        return sqrt(squared_sum);
+    };
+
+    double Determinant(double **a, int n) {
+       /* Taken from http://paulbourke.net/miscellaneous/determinant/ */
+        int i, j, j1, j2;
+        double det = 0;
+        double **m = NULL;
+    
+        if (n < 1) { /* Error */ cout << "Determinant cannot be calculated for empty matrix" << endl;
+        } else if (n == 1) { /* Shouldn't get used */
+            det = a[0][0];
+        } else if (n == 2) {
+            det = a[0][0] * a[1][1] - a[1][0] * a[0][1];
+        } else {
+            det = 0;
+            for (j1=0;j1<n;j1++) {
+                m = (double**) malloc((n-1)*sizeof(double *));
+                for (i=0;i<n-1;i++)
+                    m[i] = (double*) malloc((n-1)*sizeof(double));
+                for (i=1; i<n; i++) {
+                    j2 = 0;
+                    for (j=0; j<n; j++) {
+                        if (j == j1) continue;
+                        m[i-1][j2] = a[i][j];
+                        j2++;
+                    }
+                }
+                det += pow(-1.0,1.0+j1+1.0) * a[0][j1] * Determinant(m,n-1);
+                for (i=0;i<n-1;i++) free(m[i]);
+                free(m);
+            }
+        }
+        return(det);
+    };
+
+    static timestamp_t get_timestamp() {
+        struct timeval now;
+        gettimeofday(&now, NULL);
+        return now.tv_usec + (timestamp_t) now.tv_sec * 1000000;
+    };
+
+    /* Global optimization strategies */
+    void partition_feasable_region_combinatoricly(){
         int n = _func->_D;
         int number_of_simpleces = 1;
         for (int i = 1; i <= n; i++) {
@@ -218,35 +258,54 @@ public:
         } while (next_permutation(teta, teta+n));
     };
 
-    void print(){
-        cout << endl << "Disimpl-v" << endl;
-        cout << " Simplexes in partition: " << _partition.size() << endl;
-        for (int i=0; i < _partition.size(); i++){
-            _partition[i]->print();
+    vector<Simplex*> divide_simplex(Simplex* simplex, string strategy="longest_half") {
+        vector<Simplex*> divided_simplexes;
+        if (strategy== "longest_half") {
+            // Find middle point
+            int n = _func->_D;
+            double c[n];
+            for (int i=0; i < n; i++) {
+                c[i] = (simplex->_le_v1->_X[i] + simplex->_le_v2->_X[i]) / 2.;
+            };
+            Point* middle_point = _func->get(c, n);
+            // Construct two new simplexes using this middle point.
+            Simplex* left_simplex = new Simplex();
+            Simplex* right_simplex = new Simplex();
+
+            for (int i=0; i < simplex->size(); i++){
+                // Point* point = _func->get(new Point(triangle[i], n)); 
+                if (simplex->_verts[i] != simplex->_le_v1){
+                    right_simplex->add_vertex(simplex->_verts[i]);
+                } else {
+                    right_simplex->add_vertex(middle_point);
+                };
+                if (simplex->_verts[i] != simplex->_le_v2) {
+                    left_simplex->add_vertex(simplex->_verts[i]);
+                } else {
+                    left_simplex->add_vertex(middle_point);
+                };
+            };
+            left_simplex->init_parameters(_func);
+            right_simplex->init_parameters(_func);
+            left_simplex->_parent = simplex;
+            right_simplex->_parent = simplex;
+            simplex->_is_in_partition = false;
+
+            divided_simplexes.push_back(left_simplex);
+            divided_simplexes.push_back(right_simplex);
+            return divided_simplexes;
         };
     };
 
-    double l2norm(Point* p1, Point* p2) {
-        double squared_sum = 0;
-        for (int i=0; i < p1->size(); i++){
-            squared_sum += pow(p1->_X[i] - p2->_X[i], 2);
-        };
-        return sqrt(squared_sum);
+    friend ostream& operator<<(ostream& o, const Algorithm& a){
+        o << "alg: '" << a._name << "', func: '" << a._func->_name << 
+           "', calls: " << a._func->_calls << ", subregions: " << a._partition.size() <<
+           ", duration: " << a._duration << ", stop_criteria: '" << a._stop_criteria << 
+           "', f_min: " << a._func->_f_min << ", x_min: " << (*a._func->_x_min);
+        return o;
     };
 
-    int nextv(int v, int m) {
-        if (v == m) {
-            return 0;
-        };
-        return v + 1;
-    };
-    int predv(int v, int m) {
-        if (v == 0) {
-            return m;
-        };
-        return v - 1;
-    };
-
+    /* Test functions */
     void test_unique_simplexes(){
         //// Test to check if simplexes are unique in _partition.
         for (int i=0; i < _partition.size(); i++){
@@ -275,38 +334,41 @@ public:
         };
     };
 
+    virtual ~Algorithm(){
+        for (int i=0; i < _all_simplexes.size(); i++) {
+            delete _all_simplexes[i];
+        };
+        _all_simplexes.clear();
+        _partition.clear();
+    };
+};
 
-    double Determinant(double **a, int n) {
-       /* Taken from http://paulbourke.net/miscellaneous/determinant/ */
-        int i, j, j1, j2;
-        double det = 0;
-        double **m = NULL;
-    
-        if (n < 1) { /* Error */ cout << "Determinant cannot be calculated for empty matrix" << endl;
-        } else if (n == 1) { /* Shouldn't get used */
-            det = a[0][0];
-        } else if (n == 2) {
-            det = a[0][0] * a[1][1] - a[1][0] * a[0][1];
-        } else {
-            det = 0;
-            for (j1=0;j1<n;j1++) {
-                m = (double**) malloc((n-1)*sizeof(double *));
-                for (i=0;i<n-1;i++)
-                    m[i] = (double*) malloc((n-1)*sizeof(double));
-                for (i=1; i<n; i++) {
-                    j2 = 0;
-                    for (j=0; j<n; j++) {
-                        if (j == j1) continue;
-                        m[i-1][j2] = a[i][j];
-                        j2++;
-                    }
-                }
-                det += pow(-1.0,1.0+j1+1.0) * a[0][j1] * Determinant(m,n-1);
-                for (i=0;i<n-1;i++) free(m[i]);
-                free(m);
-            }
-        }
-        return(det);
+
+class Disimplv : public Algorithm {
+    Disimplv(const Disimplv& other){};
+    Disimplv& operator=(const Disimplv& other){};
+public:
+    Disimplv(double min_pe, int max_calls){
+        _name = "Disimpl-v";
+        _min_pe = min_pe;
+        _max_calls = max_calls;
+        ofstream log_file; 
+        log_file.open("log/partition.txt");
+        log_file.close();
+        _stop_criteria = "x_dist_Serg";
+    };
+
+    int nextv(int v, int m) {
+        if (v == m) {
+            return 0;
+        };
+        return v + 1;
+    };
+    int predv(int v, int m) {
+        if (v == 0) {
+            return m;
+        };
+        return v - 1;
     };
 
     vector<Simplex*> convex_hull(vector<Simplex*> simplexes) {
@@ -334,10 +396,6 @@ public:
             matrix[0] = line1;
             matrix[1] = line2;
             matrix[2] = line3;
-            // (double**) 
-            // double matrix[3][3] = {{simplexes[a]->_diameter, simplexes[a]->_min_value, 1.},
-            //                      {simplexes[b]->_diameter, simplexes[b]->_min_value, 1.},
-            //                      {simplexes[c]->_diameter, simplexes[c]->_min_value, 1.}};
             det_val = Determinant(matrix, 3);
 
             if (det_val >= 0){
@@ -356,6 +414,7 @@ public:
         };
         return simplexes;
     };
+
 
     vector<Simplex*> select_simplexes_to_divide(int iteration=0, string strategy="min_vert"){
 
@@ -446,7 +505,7 @@ public:
                 double slope = (b2 - double(b1))/(a2 - a1);
                 double bias = b1 - slope * a1;
 
-                if (bias > f_min - 0.0001*fabs(f_min)) {
+                if (bias > f_min - 0.0001*fabs(f_min)) {   // epsilon
                     selected[selected.size() - i -2]->_should_be_divided = false;
                 };
             };
@@ -455,7 +514,6 @@ public:
             selected.erase(remove_if(selected.begin(), selected.end(), Simplex::wont_be_divided), selected.end());
 
             // Select all simplexes which have best _min_value for its size 
-            // vector<Simplex*> selected_simplexes;
             for (int i=0; i < sorted_partition.size(); i++) {
                 for (int j=0; j < selected.size(); j++) {
                     if ((sorted_partition[i]->_diameter == selected[j]->_diameter) && 
@@ -476,48 +534,10 @@ public:
         return selected_simplexes;
     };
 
-    vector<Simplex*> divide_simplex(Simplex* simplex, string strategy="longest_half") {
-        vector<Simplex*> divided_simplexes;
-        if (strategy== "longest_half") {
-            // Find middle point
-            int n = _func->_D;
-            double c[n];
-            for (int i=0; i < n; i++) {
-                c[i] = (simplex->_le_v1->_X[i] + simplex->_le_v2->_X[i]) / 2.;
-            };
-            Point* middle_point = _func->get(c, n);
-            // Construct two new simplexes using this middle point.
-            Simplex* left_simplex = new Simplex();
-            Simplex* right_simplex = new Simplex();
-
-            for (int i=0; i < simplex->size(); i++){
-                // Point* point = _func->get(new Point(triangle[i], n)); 
-                if (simplex->_verts[i] != simplex->_le_v1){
-                    right_simplex->add_vertex(simplex->_verts[i]);
-                } else {
-                    right_simplex->add_vertex(middle_point);
-                };
-                if (simplex->_verts[i] != simplex->_le_v2) {
-                    left_simplex->add_vertex(simplex->_verts[i]);
-                } else {
-                    left_simplex->add_vertex(middle_point);
-                };
-            };
-            left_simplex->init_parameters(_func);
-            right_simplex->init_parameters(_func);
-            left_simplex->_parent = simplex;
-            right_simplex->_parent = simplex;
-            simplex->_is_in_partition = false;
-
-            divided_simplexes.push_back(left_simplex);
-            divided_simplexes.push_back(right_simplex);
-            return divided_simplexes;
-        };
-    };
-
     void minimize(Function* func){
         _func = func;
-        partition_feasable_region();
+        timestamp_t start = get_timestamp();
+        partition_feasable_region_combinatoricly();
 
         int iteration = 0;
         while (_func->_calls <= _max_calls && !_func->is_accurate_enougth()) { // _func->pe() > _min_pe){
@@ -558,18 +578,13 @@ public:
             //     break;
             // };
         };
+        timestamp_t end = get_timestamp();
+        _duration = (end - start) / 1000000.0L;
 
         // Draw partitioning: output simplex coordinates to file and draw it with Python
     };
 
-
-    virtual ~Disimplv(){
-        for (int i=0; i < _all_simplexes.size(); i++) {
-            delete _all_simplexes[i];
-        };
-        _all_simplexes.clear();
-        _partition.clear();
-    };
+    virtual ~Disimplv(){};
 };
 
 #endif
