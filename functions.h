@@ -81,6 +81,14 @@ public:
         cout << endl;
     };
 
+    friend ostream& operator<<(ostream& o, const Point& p){
+        for (int i=0; i < p._D; i++) {
+            o << p._X[i];
+            if (i != p._D - 1) { o << ","; };
+        };
+        return o;
+    };
+
     virtual ~Point(){
         free(_X);
         vector<double>::iterator vit = _values.begin();
@@ -89,6 +97,7 @@ public:
         };
     };
 };
+
 
 class PointTree;
 
@@ -442,7 +451,7 @@ public:
     Point* _glob_x;  // Point where global function minimum is (should be list)
     double _delta;   // Accuracy for stoping criteria based on distance from glob_x
     double _glob_f;  // Predefined global function minimum
-    double _L;       // Lipschitz constant
+    double _L;       // Global Lipschitz constant
 
     int _calls;
     double _f_min;  // Best known function value
@@ -592,13 +601,12 @@ public:
         double _GKLS_class_global_dists[] = {0.9, 0.9, 0.66, 0.9, 0.66, 0.9, 0.66, 0.66};
         double _GKLS_class_global_radiuses[] = {0.2, 0.1, 0.2, 0.2, 0.2, 0.2, 0.3, 0.2};
         double _GKLS_class_detlas[] = {1e-4, 1e-4, 1e-6, 1e-6, 1e-6, 1e-6, 1e-7, 1e-7};
-
         cls -= 1;
         _name = "GKLSFunction";
         _D = _GKLS_class_D[cls];
         _global_dist = _GKLS_class_global_dists[cls];
         _global_radius = _GKLS_class_global_radiuses[cls]; 
-        _delta = pow(_GKLS_class_detlas[cls], 1./_D);
+        _delta = pow(_GKLS_class_detlas[cls], 1./_D);   // _delta = _GKLS_class_detlas[cls];
 
         _lb = new Point(-1., _D);
         _ub = new Point(1., _D);
@@ -652,6 +660,8 @@ public:
         delete _lb;
         delete _ub;
         delete _glob_x;
+        GKLS_free();
+        GKLS_domain_free();
     };
 };
 
