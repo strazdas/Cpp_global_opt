@@ -33,8 +33,8 @@ int main (int argc, char *argv[]) {
         MPI::Init();
         pool = MPI::COMM_WORLD.Get_size();
         pid = MPI::COMM_WORLD.Get_rank();
-        fid_from = 1 + pid * 10;
-        fid_till = (pid + 1) * 10; 
+        fid_from = (int) round(1 + pid * (100. / pool));
+        fid_till = (int) round((pid + 1) * (100. / pool)); 
     };
         
     GKLSFunction* func;
