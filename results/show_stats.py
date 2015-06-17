@@ -34,7 +34,8 @@ def show_stats(root_path="."):
                 if stats['calls']:
                     l = len(stats['calls'])
                     stats['calls'] = sorted(stats['calls'])
-                    print "fc50: %5d,  fc100: %5d,  calls: %9.3f  runs: %3d" % (stats['calls'][l/2], stats['calls'][-1], mean(stats['calls']), len(stats['calls']))
+                    stats['subregions'] = sorted(stats['subregions'])
+                    print "fc50: %5d   fc100: %5d   calls: %9.3f   runs: %3d   parts50: %6d   parts100: %6d" % (stats['calls'][l/2], stats['calls'][-1], mean(stats['calls']), len(stats['calls']), stats['subregions'][l/2], stats['subregions'][-1])
                 else:
                     print
 
