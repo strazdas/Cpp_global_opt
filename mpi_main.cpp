@@ -41,7 +41,7 @@ int main (int argc, char *argv[]) {
     Disimplv* alg;
     for (int fid=fid_from; fid <= fid_till; fid++) {
         // Initialise function and algorithm
-        alg = new Disimplv(1.0, 1000000);
+        alg = new Disimplv("min_vert");
         func = new GKLSFunction(cls, fid);
 
         // Minimize function
