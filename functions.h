@@ -4,6 +4,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <algorithm>
 #include <math.h> 
 #include <limits>
@@ -79,6 +80,10 @@ public:
             cout << _values[i] << "  ";
         };
         cout << endl;
+    };
+
+    static bool compare_by_value(Point* p1, Point* p2) {
+        return p1->_values[0] < p2->_values[0];
     };
 
     friend ostream& operator<<(ostream& o, const Point& p){
@@ -601,8 +606,12 @@ public:
         double _GKLS_class_global_dists[] = {0.9, 0.9, 0.66, 0.9, 0.66, 0.9, 0.66, 0.66};
         double _GKLS_class_global_radiuses[] = {0.2, 0.1, 0.2, 0.2, 0.2, 0.2, 0.3, 0.2};
         double _GKLS_class_detlas[] = {1e-4, 1e-4, 1e-6, 1e-6, 1e-6, 1e-6, 1e-7, 1e-7};
+
+        stringstream function_name; 
+        function_name << cls << "_" << function_id;  
+        _name =  function_name.str();
+
         cls -= 1;
-        _name = "GKLSFunction";
         _D = _GKLS_class_D[cls];
         _global_dist = _GKLS_class_global_dists[cls];
         _global_radius = _GKLS_class_global_radiuses[cls]; 
