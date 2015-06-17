@@ -1,7 +1,6 @@
-run:
+run: compile
 	@echo "==================================================================================="
 	clear
-	g++ gkls.c rnd_gen.c main.cpp -o main.out
 	./main.out
 
 run_mpi: compile_mpi
@@ -13,6 +12,9 @@ run_mpi: compile_mpi
 	qsub -pe orte 16 cls6.sh
 	qsub -pe orte 16 cls7.sh
 	qsub -pe orte 16 cls8.sh
+
+compile:
+	g++ gkls.c rnd_gen.c main.cpp -o main.out
 
 compile_mpi:
 	/opt/openmpi/bin/mpiCC -o mpi_main.out gkls.c rnd_gen.c mpi_main.cpp
@@ -30,3 +32,6 @@ queue:
 
 num:
 	ls results/Disimpl-v/ | wc -l
+
+mem_check: compile
+	valgrind --tool=memcheck --leak-check=full -v ./main.out
