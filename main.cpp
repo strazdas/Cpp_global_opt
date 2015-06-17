@@ -15,6 +15,7 @@ void print_stats(int calls[], int subregions[], int n) {
         " Subregions50: " << subregions[49] << " Subregions100: " << subregions[99] << endl; 
 };
 
+
 int main() {
     GKLSFunction* func;
     Disimplv* alg;
@@ -23,7 +24,8 @@ int main() {
         int calls[100];
         int subregions[100];
         for (int fid=1; fid <= n; fid++) {
-            alg = new Disimplv(1.0, 1000000);
+            // alg = new Disimpl("min_vert");
+            alg = new Disimplv("longest_edge_lb");
             func = new GKLSFunction(cls, fid);
 
             alg->minimize(func);
