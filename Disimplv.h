@@ -65,13 +65,29 @@ static timestamp_t get_timestamp() {
     return now.tv_usec + (timestamp_t) now.tv_sec * 1000000;
 };
 
-
 /* Class definitions */
+enum LowerBoundStrategy { MinVert, LongestEdgeLB, LowestEdgeLB, All };
+const char* LBS[] = { "Min vert", "Longest edge LB", "Lowest edge LB", "All", 0 };
+enum LStrategy { Self, ParentSelf, Neighbours };
+const char* LS[] = { "Self", "Parent+Self", "Neighbours", 0 };
+enum DivisionStrategy { LongestHalf };
+const char* DS[] = { "Longest Half", 0 };
+enum SimplexGradientStrategy { FFMinVert, FFMaxVert, FFAllVertMean };
+const char* SGS[] = { "FF min vert", "FF max vert", "FF all vert mean", 0 };   // "All vert max" should match "Max vert"
+
 class Simplex {
     Simplex(const Simplex& other){}
     Simplex& operator=(const Simplex& other){}
 public:
-    Simplex(){
+    Simplex(LowerBoundStrategy lower_bound_strategy,
+            LStrategy L_strategy,
+            double parent_L_part,
+            SimplexGradientStrategy simplex_gradient_strategy
+            ){  // Should accept Lower_Bound_strategy and L_strategy parameter.
+        _lower_bound_strategy = lower_bound_strategy;
+        _L_strategy = L_strategy;
+        _parent_L_part = parent_L_part;
+        _simplex_gradient_strategy = simplex_gradient_strategy;
         _is_in_partition = true;
         _parent = 0;
         _diameter = 0;
@@ -83,6 +99,9 @@ public:
         _min_vert_value = numeric_limits<double>::max();
         _should_be_divided = false;
     };
+    LowerBoundStrategy _lower_bound_strategy;
+    LStrategy _L_strategy;
+    SimplexGradientStrategy _simplex_gradient_strategy;
 
     vector<Point*> _verts;
     bool _is_in_partition;
@@ -92,7 +111,11 @@ public:
     Point* _le_v1;      // Longest edge vertex1
     Point* _le_v2; 
     double _diameter;   // Longest edge length
-    double _L;          // Estimate of Lipschitz constant 
+
+    double _L;          // Cumulative estimate of Lipschitz constant 
+    double _grad_norm;  // Lipschitz constant estimate calculated by Simplex Gradient Euclidean norm.
+    double _parent_L_part;
+
     Point* _min_vert;   // Pointer to vertex with lowest function value 
     double _min_vert_value;  // _min_vert function value 
     Point* _max_vert;
@@ -105,6 +128,7 @@ public:
     
     void init_parameters(Function* func){   // Called when all verts have been added
 
+        // Note: claculating metrics needed by algorithm would reduce calculations
         double edge_length;  // Temporary variable
         for (int a=0; a < _verts.size(); a++) {
             // Finds _diameter
@@ -128,7 +152,19 @@ public:
         _max_vert_value = _max_vert->_values[0];
 
         // Find adaptive Lipschitz constant
-        _L = find_Lipschitz_constant_estimate();  // Check in the article if its defined
+        _grad_norm = find_simplex_gradient_norm(_simplex_gradient_strategy);      // Check in the article if global Lipschitz constant is defined
+        if (_L_strategy == Self) { _L = _grad_norm; };
+            // Self, ParentSelf, Neighbours
+        if (_L_strategy == ParentSelf) {
+            if (_parent != 0) {
+                _L = _parent_L_part * _parent->_grad_norm + (1 - _parent_L_part) * _grad_norm;
+            } else {
+                _L = _grad_norm;
+            };
+        };
+        if (_L_strategy == Neighbours) {
+            _L = _grad_norm;
+        };
 
         // Find longest edge lower bound
         _longest_edge_lb_value = find_edge_lb_value(_le_v1, _le_v2, _L);
@@ -149,7 +185,7 @@ public:
         // simpleksus su epsilon (potencialiai optimalių simpleksų parinkimo metu).
     };
 
-    double find_Lipschitz_constant_estimate(){  // Estimates L constant at minimum Simplex vertex point.
+    double find_simplex_gradient_norm(SimplexGradientStrategy simplex_gradient_strategy){  // Estimates L constant at minimum Simplex vertex point.
         int D = _verts.size() - 1;
         double L_estimate = 0;
         Eigen::VectorXd f_diff(D);
@@ -157,14 +193,32 @@ public:
         Eigen::MatrixXd x_diff_inv_T(D, D);
         Eigen::VectorXd grad(D);
 
-        for (int i=1; i < D+1; i++) {
-            f_diff(i - 1) = _verts[i]->_values[0] - _min_vert->_values[0];
-        }; 
 
-        for (int i=1; i < D+1; i++) {
-            for (int j=0; j < D; j++) {
-                x_diff(i-1, j) = _verts[i]->_X[j] - _min_vert->_X[j];
+        if (simplex_gradient_strategy == FFMinVert) {  // Gradient at min vertex
+            for (int i=1; i < D+1; i++) { 
+                f_diff(i - 1) = _verts[i]->_values[0] - _min_vert->_values[0];
+            }; 
+
+            for (int i=1; i < D+1; i++) {
+                for (int j=0; j < D; j++) {
+                    x_diff(i-1, j) = _verts[i]->_X[j] - _min_vert->_X[j];
+                };
             };
+        };
+        if (simplex_gradient_strategy == FFMaxVert) {  // Gradient at max vertex
+            for (int i=0; i < D; i++) { 
+                f_diff(i) = _verts[i]->_values[0] - _max_vert->_values[0];
+            }; 
+
+            for (int i=0; i < D; i++) {
+                for (int j=0; j < D; j++) {
+                    x_diff(i, j) = _verts[i]->_X[j] - _max_vert->_X[j];
+                };
+            };
+        };
+        if (simplex_gradient_strategy == FFMaxVert) {
+            throw "FFMaxVert gradient strategy not implemented yet";
+            // FFAllVertMean
         };
 
         // Find gradient at lowest point
@@ -271,7 +325,7 @@ public:
     };  
 };
 
-class Algorithm{
+class Algorithm {
     Algorithm(const Algorithm& other){};
     Algorithm& operator=(const Algorithm& other){};
 public:
@@ -285,8 +339,12 @@ public:
     vector<Simplex*> _partition;
     vector<Simplex*> _all_simplexes;
     Function* _func;
-    string _selection_strategy;
-    string _division_strategy;
+
+    LowerBoundStrategy _lower_bound_strategy;     // Simplex lower bound estimation strategy 
+    LStrategy _L_strategy;  // Lipschitz constant estimation strategy
+    DivisionStrategy _division_strategy;      // Simplex edge division strategy
+    SimplexGradientStrategy _simplex_gradient_strategy;
+    double _parent_L_part;
 
     /* Global optimization strategies */
     void partition_feasable_region_combinatoricly(){
@@ -315,7 +373,7 @@ public:
                 triangle[vertex + 1][teta[vertex]] = 1;
             }
 
-            Simplex* simpl = new Simplex();
+            Simplex* simpl = new Simplex(_lower_bound_strategy, _L_strategy, _parent_L_part, _simplex_gradient_strategy);
             for (int i=0; i < n + 1; i++){
                 Point* tmp_point = new Point(triangle[i], n);
                 Point* point = _func->get(tmp_point); 
@@ -342,8 +400,8 @@ public:
             };
             Point* middle_point = _func->get(c, n);
             // Construct two new simplexes using this middle point.
-            Simplex* left_simplex = new Simplex();
-            Simplex* right_simplex = new Simplex();
+            Simplex* left_simplex = new Simplex(_lower_bound_strategy, _L_strategy, _parent_L_part, _simplex_gradient_strategy);
+            Simplex* right_simplex = new Simplex(_lower_bound_strategy, _L_strategy, _parent_L_part, _simplex_gradient_strategy);
 
             for (int i=0; i < simplex->size(); i++){
                 // Point* point = _func->get(new Point(triangle[i], n)); 
@@ -358,10 +416,10 @@ public:
                     left_simplex->add_vertex(middle_point);
                 };
             };
-            left_simplex->init_parameters(_func);
-            right_simplex->init_parameters(_func);
             left_simplex->_parent = simplex;
             right_simplex->_parent = simplex;
+            left_simplex->init_parameters(_func);
+            right_simplex->init_parameters(_func);
             simplex->_is_in_partition = false;
 
             divided_simplexes.push_back(left_simplex);
@@ -421,18 +479,26 @@ class Disimplv : public Algorithm {
     Disimplv(const Disimplv& other){};
     Disimplv& operator=(const Disimplv& other){};
 public:
-    Disimplv(string selection_strategy="min_vert", double epsilon=0.0001, int max_calls=1000000){
-        _selection_strategy = selection_strategy;
-        _max_calls = max_calls;
-
-        _epsilon = epsilon;
-
+    Disimplv(LowerBoundStrategy lower_bound_strategy=MinVert,
+             LStrategy L_estimation_strategy=Self,
+             DivisionStrategy division_strategy=LongestHalf,
+             SimplexGradientStrategy simplex_gradient_strategy=FFMinVert,
+             double parent_L_part=0.1,
+             double epsilon=0.0001,
+             int max_calls=1000000){
+        _lower_bound_strategy = lower_bound_strategy;
+        _L_strategy = L_estimation_strategy;
+        _simplex_gradient_strategy = simplex_gradient_strategy;
+        _division_strategy = division_strategy;
         _stop_criteria = "x_dist_Serg";
+        _max_calls = max_calls;
+        _epsilon = epsilon;
+        _parent_L_part = parent_L_part;
         // _min_pe = min_pe;
 
         // Construct algorithm name
-        if (_selection_strategy == "min_vert") { _name = "Disimpl-v"; };
-        if (_selection_strategy == "longest_edge_lb") { _name = "Disimpl-2v-le"; }; 
+        if (_lower_bound_strategy == MinVert) { _name = "Disimpl-v"; };
+        if (_lower_bound_strategy == LongestEdgeLB) { _name = "Disimpl-2v-le"; }; 
         stringstream alg_name; 
         alg_name << _name << "_e" << epsilon;  
         _name =  alg_name.str();
@@ -717,16 +783,16 @@ public:
 
     virtual vector<Simplex*> select_simplexes_to_divide(int iteration=0){
         vector<Simplex*> selected_simplexes;
-        if (_selection_strategy == "min_vert") {
+        if (_lower_bound_strategy == MinVert) {
             selected_simplexes = select_simplexes_by_min_vert();
         };
-        if (_selection_strategy == "longest_edge_lb") {
+        if (_lower_bound_strategy == LongestEdgeLB) {
             selected_simplexes = select_simplexes_by_longest_edge_lb();
         };
-        if (_selection_strategy == "lowest_edge_lb"){
+        if (_lower_bound_strategy == LowestEdgeLB){
             selected_simplexes = select_simplexes_by_lowest_edge_lb();
         };
-        if (_selection_strategy == "all") {
+        if (_lower_bound_strategy == All) {
             selected_simplexes = _partition;
         };
         for (int i=0; i < selected_simplexes.size(); i++){

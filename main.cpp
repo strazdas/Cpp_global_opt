@@ -20,16 +20,22 @@ int main() {
     GKLSFunction* func;
     Disimplv* alg;
     int n = 100;
-    for (int cls=1; cls <= 8; cls++) {
+    for (int cls=1; cls <= 2; cls++) {
         int calls[100];
         int subregions[100];
         for (int fid=1; fid <= n; fid++) {
-            // alg = new Disimpl("min_vert");
-            alg = new Disimplv("longest_edge_lb");
+            //// Laisvės laipsniai:
+            // Kurioje viršūnėje skaičiuoti simplekso gradientą (centre?).
+            // LowerBoundStrategy { MinVert, LongestEdgeLB, LowestEdgeLB };
+            // LStrategy { Self, ParentSelf, NeighboursSelf, ParentNeighboursSelf };
+            // parent_L_part
+            // DivisionStrategy { LongestHalf };
+            alg = new Disimplv(LongestEdgeLB, Neighbours);
             func = new GKLSFunction(cls, fid);
 
             alg->minimize(func);
-            cout << (*alg) << endl;
+            if (fid == 1 && cls == 1) { cout << alg->_name << " " << alg->_parent_L_part << endl; };
+            // cout << (*alg) << endl;
 
             calls[fid-1] = func->_calls;
             subregions[fid-1] = alg->_partition.size();
