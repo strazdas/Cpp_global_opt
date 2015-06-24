@@ -18,6 +18,7 @@
 
 using namespace std;
 
+class Simplex;
 
 class Point {
     Point(const Point& other){}
@@ -58,6 +59,7 @@ public:
     int _D;
     double* _X;  // Coordinates in normalised [0,1]^n space  
     vector<double> _values;
+    vector<Simplex*> _simplexes;
          
     void add_value(double value) {
         _values.push_back(value);
@@ -350,10 +352,12 @@ public:
             };
         };
     };
+
     void print(){
         _tree_root->print();
         cout << endl;
     };
+
     virtual ~PointTree(){
         delete _tree_root;
     };
