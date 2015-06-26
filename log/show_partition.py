@@ -1,11 +1,11 @@
 # should construct simplexes and call show potential function
 from numpy import array as a, matrix as m, arange, sqrt, isnan, pi, cos, sin, mean
 from itertools import permutations
-
+from mpl_toolkits.mplot3d import axes3d
 
 def show_partition(filename='partition.txt'):
     from matplotlib import pyplot as plt
-    draw_from_iteration = 24
+    draw_from_iteration = 1
     iteration = 0
     f = open(filename)
     simplexes = []
@@ -67,8 +67,12 @@ def l2norm(a1, a2):
 
 def show_potential(simplexes, selected=[], show=True, title=''):
     from matplotlib import pyplot as plt
-    # Draw two plots
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12,6))
+    ## Draw two plots
+    # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12,6), projection='3d')
+    # ax = fig.add_subplot(1, 2, 1, projection='3d')
+    fig = plt.figure(figsize=(14,6))
+    ax1 = fig.add_subplot(121, projection='3d')
+    ax2 = fig.add_subplot(122)
     fig.suptitle(title)
 
     for simplex in simplexes:
@@ -83,13 +87,21 @@ def show_potential(simplexes, selected=[], show=True, title=''):
 
     for simplex in simplexes:
         s = simplex[:-1]
-        for j in range(3):
-            ax1.plot([s[j-1][0], s[j][0]], [s[j-1][1], s[j][1]], 'b-')
+        for j in range(len(s)):
+            if len(s) == 3:
+                ax1.plot([s[j-1][0], s[j][0]], [s[j-1][1], s[j][1]], 'b-')
+            else:
+                # should use permutations here
+                ax1.plot([s[j-1][0], s[j][0]], [s[j-1][1], s[j][1]], [s[j-1][2], s[j][2]], 'b-')
 
     for simplex in selected:
-        s = sort_vertexes_longest_edge_first(simplex)[:-1]
-        for j in range(3):
-            ax1.plot([s[j-1][0], s[j][0]], [s[j-1][1], s[j][1]], 'r-', linewidth=2)
+        s = sort_vertexes_longest_edge_first(simplex[:-1])
+        for i, j in permutations(range(len(s)), 2):
+            if len(s) == 3:
+                ax1.plot([s[i][0], s[j][0]], [s[i][1], s[j][1]], 'r-', linewidth=2)
+            else:
+                # should use permutations here
+                ax1.plot([s[i][0], s[j][0]], [s[i][1], s[j][1]], [s[i][2], s[j][2]], 'r-', linewidth=2)
 
         edge_lengths = []   # [(vertex_index, vertex_index, edge_length),]
         for i, j in permutations(range(len(s)), 2):
@@ -97,21 +109,29 @@ def show_potential(simplexes, selected=[], show=True, title=''):
                 edge_lengths.append((i, j, l2norm(s[i][:-1], s[j][:-1])))
         le_i, le_j, le_length = max(edge_lengths, key=lambda x: x[-1])
 
-        division_point = [(s[le_i][0]+s[le_j][0])/2., (s[le_i][1]+s[le_j][1])/2.]
-        # ax1.plot([division_point[0], simplex[2][0]], [division_point[1], simplex[2][0]], 'r-')
-        ax1.plot([division_point[0]], [division_point[1]], 'ro')
-        ax1.plot([division_point[0], s[2][0]], [division_point[1], s[2][1]], 'r--')
-        # Get longest edge, divide it
-        # division line needed
+        if len(s) == 3:
+            division_point = [(s[le_i][0]+s[le_j][0])/2., (s[le_i][1]+s[le_j][1])/2.]
+            ax1.plot([division_point[0]], [division_point[1]], 'ro')
+            ax1.plot([division_point[0], s[2][0]], [division_point[1], s[2][1]], 'r--')
+        else:
+            division_point = [(s[le_i][0] + s[le_j][0])/2., (s[le_i][1] + s[le_j][1])/2., (s[le_i][2] + s[le_j][2])/2.]
+            ax1.plot([division_point[0]], [division_point[1]], [division_point[2]], 'ro')
+            for i in range(len(s)):
+                if i != le_j and i != le_i:
+                    ax1.plot([division_point[0], s[i][0]], [division_point[1], s[i][1]], [division_point[2], s[i][2]], 'r--')
+                # ax1.plot([division_point[0], s[3][0]], [division_point[1], s[3][1]], [division_point[2], s[3][2]], 'r--')
 
     for simplex in simplexes:
-        for j in range(3):
-            ax1.plot([simplex[j][0]], [simplex[j][1]], 'bo')
+        for j in range(len(s)):
+            if len(s) == 3:
+                ax1.plot([simplex[j][0]], [simplex[j][1]], 'bo')
+            else:
+                ax1.plot([simplex[j][0]], [simplex[j][1]], [simplex[j][2]], 'bo')
 
     # ax2.axis([min([simplexes]) -0.05, 1.05, -0.05, 1.05])
     max_size = max([s[-1]['size'] for s in simplexes])
-    ax2.set_xlim([-0.05, max_size + 0.05])
-    ax1.axis([-0.05, 1.05, -0.05, 1.05])
+    # ax2.set_xlim([-0.05, max_size + 0.05])
+    # ax1.axis([-0.05, 1.05, -0.05, 1.05])
     if show:
         plt.show()
     return ax1, ax2
