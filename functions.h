@@ -1,5 +1,5 @@
-#ifndef DISIMPLV_H
-#define DISIMPLV_H_ 
+#ifndef FUNCTIONS_H
+#define FUNCTIONS_H 
 #include <vector>
 #include <string>
 #include <iostream>

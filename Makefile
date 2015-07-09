@@ -1,5 +1,4 @@
 run: compile
-	@echo "==================================================================================="
 	clear
 	./main.out
 
@@ -14,6 +13,7 @@ run_mpi: compile_mpi
 	qsub -pe orte 16 cls8.sh
 
 compile:
+	@echo "==================================================================================="
 	g++ gkls.c rnd_gen.c main.cpp -o main.out
 
 compile_mpi:

@@ -71,7 +71,10 @@ def show_potential(simplexes, selected=[], show=True, title=''):
     # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12,6), projection='3d')
     # ax = fig.add_subplot(1, 2, 1, projection='3d')
     fig = plt.figure(figsize=(14,6))
-    ax1 = fig.add_subplot(121, projection='3d')
+    if len(simplexes[0]) > 4:
+        ax1 = fig.add_subplot(121, projection='3d')
+    else:
+        ax1 = fig.add_subplot(121)
     ax2 = fig.add_subplot(122)
     fig.suptitle(title)
 
@@ -95,7 +98,7 @@ def show_potential(simplexes, selected=[], show=True, title=''):
                 ax1.plot([s[j-1][0], s[j][0]], [s[j-1][1], s[j][1]], [s[j-1][2], s[j][2]], 'b-')
 
     for simplex in selected:
-        s = sort_vertexes_longest_edge_first(simplex[:-1])
+        s = sort_vertexes_longest_edge_first(simplex)[:-1]
         for i, j in permutations(range(len(s)), 2):
             if len(s) == 3:
                 ax1.plot([s[i][0], s[j][0]], [s[i][1], s[j][1]], 'r-', linewidth=2)

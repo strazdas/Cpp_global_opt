@@ -1,5 +1,5 @@
 #ifndef DISIMPLV_H
-#define DISIMPLV_H_ 
+#define DISIMPLV_H 
 #include <algorithm>
 #include <fstream>
 #include <sstream>
@@ -57,7 +57,6 @@ double Determinant(double **a, int n) {
     return(det);
 };
 
-
 typedef unsigned long long timestamp_t;
 static timestamp_t get_timestamp() {
     struct timeval now;
@@ -75,6 +74,10 @@ const char* DS[] = { "Longest Half", 0 };
 enum SimplexGradientStrategy { FFMinVert, FFMaxVert, FFAllVertMean };
 const char* SGS[] = { "FF min vert", "FF max vert", "FF all vert mean", 0 };   // "All vert max" should match "Max vert"
 
+class SimplexTree;
+class SimplexTreeNode;
+
+
 class Simplex {
     Simplex(const Simplex& other){}
     Simplex& operator=(const Simplex& other){}
@@ -83,7 +86,7 @@ public:
             LStrategy L_strategy,
             double parent_L_part,
             SimplexGradientStrategy simplex_gradient_strategy
-            ){  // Should accept Lower_Bound_strategy and L_strategy parameter.
+        ){  // Should accept Lower_Bound_strategy and L_strategy parameter.
         _lower_bound_strategy = lower_bound_strategy;
         _L_strategy = L_strategy;
         _parent_L_part = parent_L_part;
@@ -154,7 +157,6 @@ public:
         // Find adaptive Lipschitz constant
         _grad_norm = find_simplex_gradient_norm(_simplex_gradient_strategy);      // Check in the article if global Lipschitz constant is defined
         if (_L_strategy == Self) { _L = _grad_norm; };
-            // Self, ParentSelf, Neighbours
         if (_L_strategy == ParentSelf) {
             if (_parent != 0) {
                 _L = _parent_L_part * _parent->_grad_norm + (1 - _parent_L_part) * _grad_norm;
@@ -163,7 +165,8 @@ public:
             };
         };
         if (_L_strategy == Neighbours) {
-            _L = _grad_norm;
+            // _L and other parameters will be updated later after all simplexes were initialized
+            return;
         };
 
         // Find longest edge lower bound
@@ -183,7 +186,26 @@ public:
 
         // Note: gali būti, kad slope apibrėžimas pas mane netinkamas atmetant
         // simpleksus su epsilon (potencialiai optimalių simpleksų parinkimo metu).
+
+
+
+        // All needed parameters should be calculated here.
+        // These are: 
+        // self.D = len(verts) - 1
+        // self.verts = verts
+        // self.values = values
+        // self.L = L
+        // self.min_value = min(values)
+        // self.diameter, self.le_vert1, self.le_vert2 = self.find_longest_edge(verts)
+        // self.min_lb = self.find_lower_bound_minimum()
+        // self.tolerance = abs(self.min_lb - self.min_value)
+        // self.min_value_id = values.index(self.min_value)
+        // self.max_value_id = values.index(max(values))
     };
+
+    static void extend_region_with_vertex_neighbours(Point* vertex, SimplexTree* region, int depth);
+
+    static void update_estimates(vector<Simplex*> simpls, Function* func);
 
     double find_simplex_gradient_norm(SimplexGradientStrategy simplex_gradient_strategy){  // Estimates L constant at minimum Simplex vertex point.
         int D = _verts.size() - 1;
@@ -226,6 +248,7 @@ public:
         for (int i=0; i < D; i++) {
             grad[i] = x_diff_inv_T.row(i).dot(f_diff);
         };
+        // cout << grad << endl;
 
         // Find norm of gradient at _min_vert 
         for (int i=0; i < grad.size(); i++){
@@ -267,12 +290,14 @@ public:
     static double compare_diameter(Simplex* s1, Simplex* s2) {
         return s1->_diameter < s2->_diameter; 
     };
+
     // static double compare_metric(Simplex* s1, Simplex* s2) {
     //     return s1->_metric__vert_min_value < s2->_metric__vert_min_value;
     // };
 
     void add_vertex(Point* vertex){
         _verts.push_back(vertex);
+        vertex->_simplexes.push_back(this);
     };
 
     int size() {
@@ -293,7 +318,10 @@ public:
         };
     };
 
-    static void log_partition(vector<Simplex*> simplexes, vector<Simplex*> selected, string label="Partition:", int iteration=0){
+    static void log_partition(vector<Simplex*> simplexes,
+                              vector<Simplex*> selected,
+                              string label="Partition:",
+                              int iteration=0){
        ofstream log_file; 
        log_file.open("log/partition.txt", ios::app);
        log_file << label << iteration << ":" << endl;
@@ -304,7 +332,12 @@ public:
                };
                log_file << " (" << simplexes[i]->_verts[j]->_values[0]<<"); ";
            };
-           log_file << " ("<< simplexes[i]->_diameter << "," << simplexes[i]->_min_vert_value << ")" << endl;
+           if (simplexes[i]->_L_strategy == Self) {
+                log_file << " ("<< simplexes[i]->_diameter << "," << simplexes[i]->_min_vert_value << ")" << endl;
+           };
+           if (simplexes[i]->_L_strategy == Neighbours) {
+                log_file << " ("<< simplexes[i]->_diameter << "," << simplexes[i]->_longest_edge_lb_value << ")" << endl;
+           };
        };
        log_file << "Selected:" << endl;
        for (int i=0; i < selected.size(); i++) {
@@ -314,7 +347,12 @@ public:
                };
                log_file << " (" << selected[i]->_verts[j]->_values[0]<<"); ";
            };
-           log_file << " ("<< selected[i]->_diameter << "," << selected[i]->_min_vert_value << ")" << endl;
+           if (selected[i]->_L_strategy == Self) {
+               log_file << " ("<< selected[i]->_diameter << "," << selected[i]->_min_vert_value << ")" << endl;
+           };
+           if (selected[i]->_L_strategy == Neighbours) {
+               log_file << " ("<< selected[i]->_diameter << "," << selected[i]->_longest_edge_lb_value << ")" << endl;
+           };
        };
 
        log_file.close();
@@ -323,6 +361,278 @@ public:
     virtual ~Simplex(){
         _verts.clear();
     };  
+};
+
+
+class SimplexTreeNode {
+    SimplexTreeNode(const SimplexTreeNode& other){}
+    SimplexTreeNode& operator=(const SimplexTreeNode& other){}
+public:                
+    SimplexTreeNode(Simplex* value){
+        _height = 1;
+        _value = value;
+        _parent = 0;
+        _left = 0;
+        _right = 0;
+    };
+    int _height;
+    Simplex* _value;
+    SimplexTreeNode* _parent;
+    SimplexTreeNode* _left;
+    SimplexTreeNode* _right;
+
+    void print(){
+        if (_left != 0) { cout << "l"; _left->print(); };
+        cout << _value << "("<< _height << ")";
+        if (_right != 0) { cout << "r"; _right->print(); };
+    };
+
+    virtual ~SimplexTreeNode();
+};
+
+class SimplexTree {  // Binary balancing tree 
+    SimplexTree(const SimplexTree& other){}
+    SimplexTree& operator=(const SimplexTree& other){}
+public:
+    SimplexTree(){
+         _max_grad_norm = numeric_limits<double>::min();
+         _tree_root = 0;
+    };
+    double _max_grad_norm;
+    SimplexTreeNode* _tree_root;
+
+    void update_height(SimplexTreeNode* node) {
+        int lh = 0;
+        int rh = 0;
+        if (node->_left != 0) { lh = node->_left->_height; }; 
+        if (node->_right != 0) { rh = node->_right->_height; };
+        if (lh > rh) {
+            node->_height = lh + 1;
+        } else {
+            node->_height = rh + 1;
+        };
+        // Also update all ancestors heights
+        if (node->_parent != 0) {
+            update_height(node->_parent);
+        };
+    };
+    void left_right_rebalance(SimplexTreeNode* node) {
+        SimplexTreeNode* diatteched_node;
+        // node left right  <-  node left right left 
+        diatteched_node = node->_left->_right;
+        node->_left->_right = node->_left->_right->_left;
+        if (node->_left->_right != 0) { node->_left->_right->_parent = node->_left; };
+        // Diatteched left = node->_left
+        diatteched_node->_left = node->_left;
+        node->_left->_parent = diatteched_node;
+        // node left  <-  node left right
+        node->_left = diatteched_node;
+        diatteched_node->_parent = node;
+        // Update heights
+        update_height(node);
+        update_height(diatteched_node);
+        update_height(diatteched_node->_left);
+    };
+    void left_left_rebalance(SimplexTreeNode* node) {
+        SimplexTreeNode* diatteched;
+        diatteched = node->_left;
+        node->_left = node->_left->_right;
+        if (node->_left != 0) { node->_left->_parent = node; };  
+        diatteched->_parent = node->_parent;
+        if (node->_parent != 0) {
+            if (node->_parent->_left == node) {
+                node->_parent->_left = diatteched;
+            } else {
+                node->_parent->_right = diatteched;
+            };
+        } else {
+            _tree_root = diatteched;
+        };
+        diatteched->_right = node;
+        node->_parent = diatteched;
+        // Update heights
+        update_height(node);
+        update_height(diatteched);
+    };
+    void right_left_rebalance(SimplexTreeNode* node) {
+        SimplexTreeNode* diatteched_node;
+        // node left right  <-  node left right left 
+        diatteched_node = node->_right->_left;
+        node->_right->_left = node->_right->_left->_right;
+        if (node->_right->_left != 0) { node->_right->_left->_parent = node->_right; };
+        // Diatteched left = node->_left
+        diatteched_node->_right = node->_right;
+        node->_right->_parent = diatteched_node;
+        // node left  <-  node left right
+        node->_right = diatteched_node;
+        diatteched_node->_parent = node;
+        // Update heights
+        update_height(node);
+        update_height(diatteched_node);
+        update_height(diatteched_node->_right);
+    };
+    void right_right_rebalance(SimplexTreeNode* node) {
+        SimplexTreeNode* diatteched;
+        diatteched = node->_right;
+        node->_right = node->_right->_left;
+        if (node->_right != 0) { node->_right->_parent = node; };
+        diatteched->_parent = node->_parent;                       
+        if (node->_parent != 0) {
+            if (node->_parent->_left == node) {
+                node->_parent->_left = diatteched;
+            } else {
+                node->_parent->_right = diatteched;
+            };
+        } else {
+            _tree_root = diatteched;
+        };
+        diatteched->_left = node;
+        node->_parent = diatteched;
+        // Update heights
+        update_height(node);
+        update_height(diatteched);
+    };
+
+    void check_if_balanced(SimplexTreeNode* node) {  // Rebalances tree if its not balanced
+        int lh = 0;
+        int rh = 0;
+        int llh = 0;
+        int lrh = 0;
+        int rlh = 0;
+        int rrh = 0;
+        if (node->_left != 0) {
+            lh = node->_left->_height;
+            if (node->_left->_left != 0) { llh = node->_left->_left->_height; };
+            if (node->_left->_right != 0) { lrh = node->_left->_right->_height; };
+        };
+        if (node->_right != 0) {
+            rh = node->_right->_height;
+            if (node->_right->_left != 0) { rlh = node->_right->_left->_height; };
+            if (node->_right->_right != 0) { rrh = node->_right->_right->_height; };
+        };
+        if (abs(rh - lh) > 1) {
+            // Not balanced, so rebalance
+            if (rh > lh) {
+                if (rrh > rlh) {
+                    right_right_rebalance(node);
+                } else {
+                    right_left_rebalance(node);
+                    right_right_rebalance(node);
+                };
+            };
+            if (rh < lh) {
+                if (llh > lrh) {
+                    left_left_rebalance(node);
+                } else {
+                    left_right_rebalance(node);
+                    left_left_rebalance(node);
+                };
+            };
+        };
+        if (node->_parent != 0) {
+            check_if_balanced(node->_parent);
+        };
+    };
+
+    Simplex* add(Simplex* value) {
+        // Get same point or insert given (if inserted returns 0)
+        SimplexTreeNode* node = _tree_root;
+        double grad_norm = value->_grad_norm;
+        if (grad_norm > _max_grad_norm) {
+            _max_grad_norm = grad_norm;
+        };
+        if (_tree_root == 0) {  // Create first tree node
+            _tree_root = new SimplexTreeNode(value);
+        } else {
+            while (true) {  // Walk through tree
+                if (value > node->_value) {
+                    if (node->_right == 0) {
+                        node->_right = new SimplexTreeNode(value);
+                        node->_right->_parent = node;
+                        update_height(node->_right);
+                        check_if_balanced(node->_right);
+                        return 0;
+                    };
+                    node = node->_right;
+                } else if (value < node->_value) {
+                    if (node->_left == 0) {
+                        node->_left = new SimplexTreeNode(value);
+                        node->_left->_parent = node;
+                        update_height(node->_left);
+                        check_if_balanced(node->_left);
+                        return 0;
+                    };
+                    node = node->_left;
+                } else {
+                    // Node value matches given simplex value
+                    return value;
+                };
+            };
+        };
+    };
+
+    void print() {
+        _tree_root->print();
+        cout << endl;
+    };
+
+    virtual ~SimplexTree();
+
+};
+
+SimplexTreeNode::~SimplexTreeNode() {
+    if (_left != 0) { delete _left; };
+    if (_right != 0) { delete _right; };
+};
+
+SimplexTree::~SimplexTree() {
+    delete _tree_root;
+};
+
+
+void Simplex::extend_region_with_vertex_neighbours(Point* vertex, SimplexTree* region, int depth) {
+    // Recursively adds vertex neighbours to region
+    for (int sid=0; sid < vertex->_simplexes.size(); sid++) {
+        Simplex* simpl = vertex->_simplexes[sid];
+        Simplex* result = region->add(simpl);
+        if (depth != 0) {
+            if (result == 0 && simpl->_is_in_partition) {
+                for (int vid=0; vid < simpl->_verts.size(); vid++) {
+                    if (simpl->_verts[vid] != vertex) {
+                        extend_region_with_vertex_neighbours(simpl->_verts[vid], region, depth-1);
+                    };
+                };
+            };
+        };    
+    };
+};
+
+void Simplex::update_estimates(vector<Simplex*> simpls, Function* func) {   // Neighbours strategy - updates estimates
+    SimplexTree* region;
+    int depth = 1;  // What about higher depth?
+    for (int sid=0; sid < simpls.size(); sid++) {
+        region = new SimplexTree();
+        for (int vid=0; vid < simpls[sid]->_verts.size(); vid++) {
+            extend_region_with_vertex_neighbours(simpls[sid]->_verts[vid], region, depth);
+        };
+        simpls[sid]->_L = region->_max_grad_norm;
+        simpls[sid]->_longest_edge_lb_value  = simpls[sid]->find_edge_lb_value(simpls[sid]->_le_v1, simpls[sid]->_le_v2, simpls[sid]->_L); 
+        
+        double E;
+        if (1e-4 * fabs(func->_glob_f) > 1e-8) {
+            E = 1e-4 * fabs(func->_glob_f);
+        } else {
+            E = 1e-8;
+        };
+        simpls[sid]->_metric__longest_edge_lb = (simpls[sid]->_longest_edge_lb_value - (func->_glob_f + E)) / simpls[sid]->_diameter;
+        delete region;
+    };
+//         simpls[sid]->_lb = simpls[sid].find_lb();
+//     };
+//     // for (int i=0; i < _verts.size(); i++) {
+//     //     cout << _verts[i]->_simplexes.size() << endl;
+//     // };
+//     
 };
 
 class Algorithm {
@@ -640,6 +950,7 @@ public:
                                          // Because practiacally this case does not occur ever.
         };
 
+
         for (int i=0; i < selected.size(); i++) {
             selected[i]->_should_be_divided = true;
         };
@@ -674,25 +985,42 @@ public:
         return selected_simplexes;
     };
 
-    vector<Simplex*> select_simplexes_by_longest_edge_lb(){
+    vector<Simplex*> select_simplexes_by_longest_edge_lb(int iteration){
+        // Update this method. Should not use convex hull, instead select simplex with lowest lower bound.
         vector<Simplex*> selected_simplexes;
+        vector<Simplex*> simplexes = _partition;
 
+        // *****   Strategy:  select simplexes with minimal lower bound value  *****
+        // double min_lower_bound_value = numeric_limits<double>::max();
+        // for (int sid=0; sid < simplexes.size(); sid++) {
+        //     if (simplexes[sid]->_longest_edge_lb_value == min_lower_bound_value) {
+        //         selected_simplexes.push_back(simplexes[sid]);
+        //     } else {
+        //         if (simplexes[sid]->_longest_edge_lb_value < min_lower_bound_value) {
+        //             selected_simplexes.clear(); // Test if clear works properly 
+        //             min_lower_bound_value = simplexes[sid]->_longest_edge_lb_value;
+        //             selected_simplexes.push_back(simplexes[sid]);
+        //         };
+        //     };
+        // };
+
+
+
+        // *****   Strategy:  convex hull from smallest lower_bound to largest diameter *****
         // Sort simplexes by their diameter
         vector<Simplex*> sorted_partition = _partition;   // Note: Could sort globally, resorting would take less time
         sort(sorted_partition.begin(), sorted_partition.end(), Simplex::compare_diameter);
         double f_min = _func->_f_min;
 
         // Find simplex with  minimum metric  and  unique diameters
-        Simplex* min_metric_simplex = sorted_partition[0];  // Initial value
+        // Simplex* min_value_simplex = sorted_partition[0];  // Initial value
+        int min_value_simplex_id = 0;
         vector<double> diameters;
         vector<Simplex*> best_for_size;
 
         bool unique_diameter;
         bool found_with_same_size;
         for (int i=0; i < sorted_partition.size(); i++) {
-            if (sorted_partition[i]->_metric__longest_edge_lb < min_metric_simplex->_metric__longest_edge_lb) {
-                min_metric_simplex = sorted_partition[i];
-            };
                 // Saves unique diameters
                 unique_diameter = true;
                 for (int j=0; j < diameters.size(); j++) {
@@ -718,33 +1046,77 @@ public:
                 if (!found_with_same_size) {
                     best_for_size.push_back(sorted_partition[i]);
                 };
+
+                if (sorted_partition[i]->_longest_edge_lb_value < best_for_size[min_value_simplex_id]->_longest_edge_lb_value) {
+                    // if (iteration == 9) { cout << "Greater" << endl; };
+                    min_value_simplex_id = best_for_size.size() - 1;
+                };
+            // if (iteration == 9) { cout << "Comparing: (" << i<<")"<< sorted_partition[i]->_longest_edge_lb_value << " and ("<< min_value_simplex_id << ")" << best_for_size[min_value_simplex_id]->_longest_edge_lb_value << endl; };
             };
 
+
+
             vector<Simplex*> selected;
-            // Is this OK?
-            // if (iteration == 24) {cout << (best_for_size.size() > 2) << ", " << (min_metric_simplex != best_for_size[best_for_size.size()-1]);};
-            if ((best_for_size.size() > 2) ) { // && (min_metric_simplex != best_for_size[best_for_size.size()-1])
+            // Select from minimum value simplex to bigest simplex using convex hull
+            // Get minimum simplex id in best_for_size:  min_value_simplex_id
+            // Find out how minimum value simplex id in best_for_size, not in sorted_partition 
+            if ((best_for_size.size() - min_value_simplex_id) > 2) {
                 vector<Simplex*> simplexes_below_line;
-                double a1 = best_for_size[0]->_diameter;
-                double b1 = best_for_size[0]->_longest_edge_lb_value;
-                // double a1 = min_metric_simplex->_diameter;  // Should be like this based on Direct Matlab implementation
-                // double b1 = min_metric_simplex->_min_value;
+                // double a1 = best_for_size[0]->_diameter;
+                // double b1 = best_for_size[0]->_longest_edge_lb_value;
+                double a1 = best_for_size[min_value_simplex_id]->_diameter;  // Should be like this based on Direct Matlab implementation
+                double b1 = best_for_size[min_value_simplex_id]->_longest_edge_lb_value;
+
                 double a2 = best_for_size[best_for_size.size()-1]->_diameter;
                 double b2 = best_for_size[best_for_size.size()-1]->_longest_edge_lb_value;
                 
                 double slope = (b2 - b1)/(a2 - a1);
                 double bias = b1 - slope * a1;
 
-                for (int i=0; i < best_for_size.size(); i++) {
+                for (int i=min_value_simplex_id; i < best_for_size.size(); i++) {
                     if (best_for_size[i]->_longest_edge_lb_value < slope*best_for_size[i]->_diameter + bias +1e-12) {
                         simplexes_below_line.push_back(best_for_size[i]);
                     };
                 };
                 selected = convex_hull(simplexes_below_line);  // Messes up simplexes_below_line
+
             } else {
-                selected = best_for_size;    // TODO: Why we divide all of them? Could divide only min_metrc_simplex.
-                                             // Because practiacally this case does not occur ever.
+                for (int i=min_value_simplex_id; i < best_for_size.size(); i++) {
+                    selected.push_back(best_for_size[i]);
+                };
+                // if (iteration >= 9) {
+                //      cout << iteration << ". Min value simplex: " << min_value_simplex_id << " total simplexes: "<< best_for_size.size() << " selected: " << selected.size() << endl;
+                //      cout << "Values: " << best_for_size[0]->_longest_edge_lb_value << ", " << best_for_size[1]->_longest_edge_lb_value << endl;
+                //      exit(0);
+                // };
             };
+
+            
+
+
+            // // if (iteration == 24) {cout << (best_for_size.size() > 2) << ", " << (min_metric_simplex != best_for_size[best_for_size.size()-1]);};
+            // if ((best_for_size.size() > 2) ) { // && (min_metric_simplex != best_for_size[best_for_size.size()-1])
+            //     vector<Simplex*> simplexes_below_line;
+            //     double a1 = best_for_size[0]->_diameter;
+            //     double b1 = best_for_size[0]->_longest_edge_lb_value;
+            //     // double a1 = min_metric_simplex->_diameter;  // Should be like this based on Direct Matlab implementation
+            //     // double b1 = min_metric_simplex->_min_value;
+            //     double a2 = best_for_size[best_for_size.size()-1]->_diameter;
+            //     double b2 = best_for_size[best_for_size.size()-1]->_longest_edge_lb_value;
+            //
+            //     double slope = (b2 - b1)/(a2 - a1);
+            //     double bias = b1 - slope * a1;
+            //
+            //     for (int i=0; i < best_for_size.size(); i++) {
+            //         if (best_for_size[i]->_longest_edge_lb_value < slope*best_for_size[i]->_diameter + bias +1e-12) {
+            //             simplexes_below_line.push_back(best_for_size[i]);
+            //         };
+            //     };
+            //     selected = convex_hull(simplexes_below_line);  // Messes up simplexes_below_line
+            // } else {
+            //     selected = best_for_size;    // TODO: Why we divide all of them? Could divide only min_metrc_simplex.
+            //                                  // Because practiacally this case does not occur ever.
+            // };
 
             for (int i=0; i < selected.size(); i++) {
                 selected[i]->_should_be_divided = true;
@@ -767,7 +1139,7 @@ public:
             // Remove simplexes which should not be divided
             selected.erase(remove_if(selected.begin(), selected.end(), Simplex::wont_be_divided), selected.end());
 
-            // Select all simplexes which have best _min_value for its size 
+            // Select all simplexes which have best longest_edge_lb_value for its size 
             for (int i=0; i < sorted_partition.size(); i++) {
                 for (int j=0; j < selected.size(); j++) {
                     if ((sorted_partition[i]->_diameter == selected[j]->_diameter) && 
@@ -776,6 +1148,110 @@ public:
                     };
                 };
             };
+
+
+
+
+        // *****   Strategy:  convex hull from smallest diameter till largest diameter *****
+        // // Sort simplexes by their diameter
+        // vector<Simplex*> sorted_partition = _partition;   // Note: Could sort globally, resorting would take less time
+        // sort(sorted_partition.begin(), sorted_partition.end(), Simplex::compare_diameter);
+        // double f_min = _func->_f_min;
+        //
+        // // Find simplex with  minimum metric  and  unique diameters
+        // Simplex* min_metric_simplex = sorted_partition[0];  // Initial value
+        // vector<double> diameters;
+        // vector<Simplex*> best_for_size;
+        //
+        // bool unique_diameter;
+        // bool found_with_same_size;
+        // for (int i=0; i < sorted_partition.size(); i++) {
+        //     if (sorted_partition[i]->_metric__longest_edge_lb < min_metric_simplex->_metric__longest_edge_lb) {
+        //         min_metric_simplex = sorted_partition[i];
+        //     };
+        //         // Saves unique diameters
+        //         unique_diameter = true;
+        //         for (int j=0; j < diameters.size(); j++) {
+        //             if (diameters[j] == sorted_partition[i]->_diameter) {
+        //                 unique_diameter = false; break;
+        //             };
+        //         };
+        //         if (unique_diameter) {
+        //             diameters.push_back(sorted_partition[i]->_diameter);
+        //         };
+        //
+        //         // If this simplex is better then previous with same size swap them.
+        //         found_with_same_size = false;
+        //         for (int j=0; j < best_for_size.size(); j++) {
+        //             if (best_for_size[j]->_diameter == sorted_partition[i]->_diameter){
+        //                 found_with_same_size = true;
+        //                 if (best_for_size[j]->_longest_edge_lb_value > sorted_partition[i]->_longest_edge_lb_value) {
+        //                     best_for_size.erase(best_for_size.begin()+j);
+        //                     best_for_size.push_back(sorted_partition[i]);
+        //                 };
+        //             };
+        //         };
+        //         if (!found_with_same_size) {
+        //             best_for_size.push_back(sorted_partition[i]);
+        //         };
+        //     };
+        //
+        //     vector<Simplex*> selected;
+        //     // Is this OK?
+        //     // if (iteration == 24) {cout << (best_for_size.size() > 2) << ", " << (min_metric_simplex != best_for_size[best_for_size.size()-1]);};
+        //     if ((best_for_size.size() > 2) ) { // && (min_metric_simplex != best_for_size[best_for_size.size()-1])
+        //         vector<Simplex*> simplexes_below_line;
+        //         double a1 = best_for_size[0]->_diameter;
+        //         double b1 = best_for_size[0]->_longest_edge_lb_value;
+        //         // double a1 = min_metric_simplex->_diameter;  // Should be like this based on Direct Matlab implementation
+        //         // double b1 = min_metric_simplex->_min_value;
+        //         double a2 = best_for_size[best_for_size.size()-1]->_diameter;
+        //         double b2 = best_for_size[best_for_size.size()-1]->_longest_edge_lb_value;
+        //         
+        //         double slope = (b2 - b1)/(a2 - a1);
+        //         double bias = b1 - slope * a1;
+        //
+        //         for (int i=0; i < best_for_size.size(); i++) {
+        //             if (best_for_size[i]->_longest_edge_lb_value < slope*best_for_size[i]->_diameter + bias +1e-12) {
+        //                 simplexes_below_line.push_back(best_for_size[i]);
+        //             };
+        //         };
+        //         selected = convex_hull(simplexes_below_line);  // Messes up simplexes_below_line
+        //     } else {
+        //         selected = best_for_size;    // TODO: Why we divide all of them? Could divide only min_metrc_simplex.
+        //                                      // Because practiacally this case does not occur ever.
+        //     };
+        //
+        //     for (int i=0; i < selected.size(); i++) {
+        //         selected[i]->_should_be_divided = true;
+        //     };
+        //
+        //     // Remove simplexes which do not satisfy condition:   f - slope*d > f_min - epsilon*abs(f_min)
+        //     for (int i=0; i < selected.size() -1; i++) {
+        //         double a1 = selected[selected.size() - i -1]->_diameter;
+        //         double b1 = selected[selected.size() - i -1]->_longest_edge_lb_value;
+        //         double a2 = selected[selected.size() - i -2]->_diameter;
+        //         double b2 = selected[selected.size() - i -2]->_longest_edge_lb_value;
+        //         double slope = (b2 - double(b1))/(a2 - a1);
+        //         double bias = b1 - slope * a1;
+        //
+        //         if (bias > f_min - _epsilon * fabs(f_min)) {   // epsilon
+        //             selected[selected.size() - i -2]->_should_be_divided = false;
+        //         };
+        //     };
+        //
+        //     // Remove simplexes which should not be divided
+        //     selected.erase(remove_if(selected.begin(), selected.end(), Simplex::wont_be_divided), selected.end());
+        //
+        //     // Select all simplexes which have best _min_value for its size 
+        //     for (int i=0; i < sorted_partition.size(); i++) {
+        //         for (int j=0; j < selected.size(); j++) {
+        //             if ((sorted_partition[i]->_diameter == selected[j]->_diameter) && 
+        //                 (sorted_partition[i]->_longest_edge_lb_value == selected[j]->_longest_edge_lb_value)) {
+        //                 selected_simplexes.push_back(sorted_partition[i]);
+        //             };
+        //         };
+        //     };
         return selected_simplexes;
     };
 
@@ -787,7 +1263,7 @@ public:
             selected_simplexes = select_simplexes_by_min_vert();
         };
         if (_lower_bound_strategy == LongestEdgeLB) {
-            selected_simplexes = select_simplexes_by_longest_edge_lb();
+            selected_simplexes = select_simplexes_by_longest_edge_lb(iteration);
         };
         if (_lower_bound_strategy == LowestEdgeLB){
             selected_simplexes = select_simplexes_by_lowest_edge_lb();
@@ -805,9 +1281,12 @@ public:
         _func = func;
         timestamp_t start = get_timestamp();
         partition_feasable_region_combinatoricly();
+        if (_L_strategy == Neighbours) { Simplex::update_estimates(_partition, _func); };
 
         int iteration = 0;
         while (_func->_calls <= _max_calls && !_func->is_accurate_enougth()) { // _func->pe() > _min_pe){
+            // cout << "Iteration: " << iteration << endl;
+
             // Selects simplexes to divide
             vector<Simplex*> simplexes_to_divide;
             if (iteration == 0) {
@@ -815,12 +1294,12 @@ public:
             } else {
                 simplexes_to_divide = select_simplexes_to_divide(iteration);
             };
-            // Simplex::log_partition(_partition, simplexes_to_divide, "\nIteration ", iteration);
+            Simplex::log_partition(_partition, simplexes_to_divide, "\nIteration ", iteration);
             // test_unique_simplexes();
 
             // Divides selected simplexes
             vector<Simplex*> new_simplexes;
-            for (int i=0; i < simplexes_to_divide.size(); i++){
+            for (int i=0; i < simplexes_to_divide.size(); i++) {
                 vector<Simplex*> divided_simplexes = divide_simplex(simplexes_to_divide[i]);
 
                 for (int j=0; j < divided_simplexes.size(); j++) {
@@ -836,10 +1315,11 @@ public:
                 _partition.push_back(new_simplexes[i]);
                 _all_simplexes.push_back(new_simplexes[i]);
             };
+            if (_L_strategy == Neighbours) { Simplex::update_estimates(_partition, _func); };
 
             // Update counters and log the status
             iteration += 1;
-            // cout << iteration << ". Simplexes: " << _partition.size() << "  calls: " << _func->_calls << endl;
+            cout << iteration << ". Simplexes: " << _partition.size() << "  calls: " << _func->_calls << endl;
 
             // if (iteration >= 1) {
             //     break;
