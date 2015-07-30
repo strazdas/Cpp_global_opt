@@ -10,6 +10,7 @@
 # Panaudoti A. Žilinsko simplekso apatinės ribos skaičiavimo strategiją.
 # Dalinimas mažiausios apatinės ribos simplekso - optimaliai minimizuoja apatinę ribą.
 
+
 from itertools import permutations
 from datetime import datetime
 from math import sqrt
@@ -207,8 +208,15 @@ if __name__ == '__main__':
     # simplex = Simplex([(0, 0), (1, 1), (1, 0)], [2.60757, 3.26901, 5.02497], L)
     # simplex = Simplex([(0, 1), (0, 0), (1, 1)], [0.218556, 2.60757, 3.26901], L)
     # simplex = Simplex([(1, 1, 1), (1, 0, 0), (1, 1, 0), (0, 0, 0)], [1.61907, 4.12837, 5.181, 7.69918], L)
-    simplex = Simplex([(1, 1, 1, 0,0), (1, 0, 0, 0,0), (1, 1, 0,0,1), (0, 0, 0,0,1), (0, 1, 0,0,0),(0, 1, 0,0,1)],
-                      [1.61907, 1.81907, 4.12837, 5.181, 7.69918, 8.242], L)
+    simplex = Simplex([
+        (1, 1, 1, 0, 0),
+        (1, 0, 0, 0, 0),
+        (1, 1, 0, 0, 1),
+        (0, 0, 0, 0, 1),
+        (0, 1, 0, 0, 0),
+        (0, 1, 0, 0, 1),
+    ],
+    [1.61907, 1.81907, 4.12837, 5.181, 7.69918, 8.242], L)
     point = optimize(simplex, L)
     end = datetime.now()
     print(end - start)
