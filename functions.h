@@ -65,6 +65,14 @@ public:
         _values.push_back(value);
     };
 
+    Point* copy() {
+        Point* point_copy = new Point(_X, _D);
+        for (int i=0; i < _values.size(); i++) {
+            point_copy->add_value(_values[i]);
+        };
+        return point_copy;
+    };
+
     int size(){
         return _D;
     };

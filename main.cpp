@@ -23,13 +23,13 @@ int main() {
     for (int cls=2; cls <= 2; cls++) {
         int calls[100];
         int subregions[100];
-        for (int fid=1; fid <= n; fid++) {
+        for (int fid=1; fid <= 1; fid++) {
             //// Laisvės laipsniai:
             // Kurioje viršūnėje skaičiuoti simplekso gradientą (centre?).
             // LowerBoundStrategy { MinVert, LongestEdgeLB, LowestEdgeLB };
             // LStrategy { Self, ParentSelf, NeighboursSelf, ParentNeighboursSelf };
             // parent_L_part
-            alg = new Disimplv(LongestEdgeLB, Neighbours);
+            alg = new Disimplv(LongestEdgeLB, Neighbours,LongestHalf, FFMinVert,0.1, 0.0001, 10);
             // alg = new Disimplv();
             func = new GKLSFunction(cls, fid);
 
@@ -44,8 +44,8 @@ int main() {
             delete func;
             // break;
         };
-        cout << "Class " << cls << " "; 
-        print_stats(calls, subregions, n);
+        // cout << "Class " << cls << " "; 
+        // print_stats(calls, subregions, n);
     };
     return 0;
 
