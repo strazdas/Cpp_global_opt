@@ -1,4 +1,4 @@
-do: mem_check
+do: run
 
 # test:
 # 	g++ test.cpp -o test.out

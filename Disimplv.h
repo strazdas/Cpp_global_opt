@@ -703,7 +703,7 @@ public:
 
             // Update counters and log the status
             iteration += 1;
-            // cout << iteration << ". Simplexes: " << _partition.size() << "  calls: " << _func->_calls << endl;
+            cout << iteration << ". Simplexes: " << _partition.size() << "  calls: " << _func->_calls << endl;
 
             // if (iteration >= 1) {
             //     break;

@@ -27,7 +27,8 @@ public:
         _L = L;
         _D = _verts.size() - 1;
         _partition.push_back(new Subsimplex(_verts, _L));
-        _accuracy = 1e-2;   // should be proportional to problem dimension
+        _accuracy = 1e-1;   // should be proportional to problem dimension
+        _max_iter = 10;
     };
     vector<Point*> _verts;   // Simplex vertexes used for initialization
     double _L;
@@ -35,6 +36,7 @@ public:
     vector<Subsimplex*> _partition;
     vector<Point*> _points;  // Cashe of Point objects to be deleted
     double _accuracy;        // Stopping criteria (tolerance threshold)
+    int _max_iter;
     
     double get_lb_value(vector<Point*> verts, double L, Point* middle_point) {
         double lb_value = -numeric_limits<double>::max();  // Note check numeric_limits<double>min() usage, because the value is 2e-308 ~ 0, and not negative.
@@ -112,8 +114,9 @@ public:
     Point* minimize() {     // Returns estimated simplex_lb_min_value
         double tolerance = _partition[0]->_tolerance;
 
-        int it = 0;
-        while (tolerance > _accuracy) {
+        int iter = 0;
+        // while (tolerance > _accuracy) {
+        while (_max_iter > iter) {
             // Pop subsimplex whith lowest min lb value from partition
             // int simplex_to_divide_id = get_simplex_to_divide_id(_partition);
             Subsimplex* to_divide = _partition[0];
@@ -141,7 +144,7 @@ public:
 
             
             tolerance = _partition[0]->_tolerance;
-            it += 1;
+            iter += 1;
             // cout << it << ". tol " << tolerance << " acc " << _accuracy << " estimate " << _partition[0]->_min_vert_value << " min_lb " << _partition[0]->_min_lb_value << " diameter " << _partition[0]->_diameter << endl;
         };
         return _partition[0]->_min_vert;

@@ -143,6 +143,7 @@ public:
         Elbme* alg = new Elbme(verts, L);
         Point* estimate_of_accurate_lb_min = alg->minimize()->copy();
         delete alg;
+        // cout << "Found estimate: " << estimate_of_accurate_lb_min->_values[0] << endl;
         return estimate_of_accurate_lb_min;
     };
 
