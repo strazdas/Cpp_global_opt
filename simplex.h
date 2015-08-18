@@ -41,6 +41,7 @@ public:
         _max_vert_value = -numeric_limits<double>::max();
         _min_vert_value = numeric_limits<double>::max();
         _should_be_divided = false;
+        _should_estimates_be_updated = true;
         _min_lb = 0;
         _min_lb_value = 0;
         _D = 0;
@@ -75,6 +76,7 @@ public:
     vector<Point*> _verts;
     bool _is_in_partition;
     bool _should_be_divided;  // Should be divided in next iteration
+    bool _should_estimates_be_updated;   // Should Lipschitz constant estimate and its lower bound be updated
     Simplex* _parent;
 
     Point* _le_v1;      // Longest edge vertex1
@@ -330,6 +332,12 @@ public:
         delete _min_lb;
         _verts.clear();
     };  
+};
+
+void Point::_neighbours_estimates_should_be_updated() {
+    for (int sid=0; sid < _simplexes.size(); sid++) {
+        _simplexes[sid]->_should_estimates_be_updated = true;
+    };
 };
 
 
@@ -590,23 +598,26 @@ void Simplex::update_estimates(vector<Simplex*> simpls, Function* func) {   // N
     };
 
     for (int sid=0; sid < simpls.size(); sid++) {
-        region = new SimplexTree();
-        for (int vid=0; vid < simpls[sid]->_verts.size(); vid++) {
-            extend_region_with_vertex_neighbours(simpls[sid]->_verts[vid], region, depth);
+        if (simpls[sid]->_should_estimates_be_updated) {
+            region = new SimplexTree();
+            for (int vid=0; vid < simpls[sid]->_verts.size(); vid++) {
+                extend_region_with_vertex_neighbours(simpls[sid]->_verts[vid], region, depth);
+            };
+            simpls[sid]->_L = region->_max_grad_norm;
+
+            //// Find accurate lower bound point and value estimates with given precision
+            if (simpls[sid]->_min_lb != 0) {  // Free allocated memory
+                delete simpls[sid]->_min_lb;
+            };
+            simpls[sid]->_min_lb = simpls[sid]->find_accurate_lb_min_estimate(simpls[sid]->_verts, simpls[sid]->_L);
+            simpls[sid]->_min_lb_value = simpls[sid]->_min_lb->_values[0];
+
+            simpls[sid]->_metric__vert_min_value = (simpls[sid]->_min_vert_value - (func->_glob_f + E)) / simpls[sid]->_diameter;
+
+            simpls[sid]->_metric__min_lb = (simpls[sid]->_min_lb_value - (func->_glob_f + E)) / simpls[sid]->_diameter;
+            delete region;
+            simpls[sid]->_should_estimates_be_updated = false;
         };
-        simpls[sid]->_L = region->_max_grad_norm;
-
-        //// Find accurate lower bound point and value estimates with given precision
-        if (simpls[sid]->_min_lb != 0) {  // Free allocated memory
-            delete simpls[sid]->_min_lb;
-        };
-        simpls[sid]->_min_lb = simpls[sid]->find_accurate_lb_min_estimate(simpls[sid]->_verts, simpls[sid]->_L);
-        simpls[sid]->_min_lb_value = simpls[sid]->_min_lb->_values[0];
-
-        simpls[sid]->_metric__vert_min_value = (simpls[sid]->_min_vert_value - (func->_glob_f + E)) / simpls[sid]->_diameter;
-
-        simpls[sid]->_metric__min_lb = (simpls[sid]->_min_lb_value - (func->_glob_f + E)) / simpls[sid]->_diameter;
-        delete region;
     };
 
     // Note: Bus labiau dalinami prasti, bet dideli simplexai

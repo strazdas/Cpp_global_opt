@@ -20,7 +20,7 @@ int main() {
     GKLSFunction* func;
     Disimplv* alg;
     int n = 100;
-    for (int cls=4; cls <= 4; cls++) {
+    for (int cls=1; cls <= 8; cls++) {
         int calls[100];
         int subregions[100];
         for (int fid=1; fid <= n; fid++) {

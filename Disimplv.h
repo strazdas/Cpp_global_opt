@@ -107,7 +107,10 @@ public:
                 } else {
                     left_simplex->add_vertex(middle_point);
                 };
+                simplex->_verts[i]->_neighbours_estimates_should_be_updated();
             };
+            middle_point->_neighbours_estimates_should_be_updated();
+
             left_simplex->_parent = simplex;
             right_simplex->_parent = simplex;
             left_simplex->init_parameters(_func);
@@ -703,7 +706,7 @@ public:
 
             // Update counters and log the status
             iteration += 1;
-            cout << iteration << ". Simplexes: " << _partition.size() << "  calls: " << _func->_calls << endl;
+            // cout << iteration << ". Simplexes: " << _partition.size() << "  calls: " << _func->_calls << endl;
 
             // if (iteration >= 1) {
             //     break;

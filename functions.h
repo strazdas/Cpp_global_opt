@@ -59,7 +59,7 @@ public:
     int _D;
     double* _X;  // Coordinates in normalised [0,1]^n space  
     vector<double> _values;
-    vector<Simplex*> _simplexes;
+    vector<Simplex*> _simplexes;  // Simplexes, which have this point as vertex
          
     void add_value(double value) {
         _values.push_back(value);
@@ -76,6 +76,13 @@ public:
     int size(){
         return _D;
     };
+
+    void _neighbours_estimates_should_be_updated();
+    // {
+    //     for (int sid=0; sid < _simplexes.size(); sid++) {
+    //         _simplexes[sid]->_should_estimates_be_updated = true;
+    //     };
+    // };
 
     void print(){
         // cout.precision(17);
