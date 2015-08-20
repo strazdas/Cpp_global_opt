@@ -678,9 +678,10 @@ public:
             if (iteration == 0) {
                 simplexes_to_divide = _partition;
             } else {
+                // Note: sort partition here
                 simplexes_to_divide = select_simplexes_to_divide(iteration);
             };
-            Simplex::log_partition(_partition, simplexes_to_divide, "\nIteration ", iteration);
+            // Simplex::log_partition(_partition, simplexes_to_divide, "\nIteration ", iteration);
             // test_unique_simplexes();
 
             // Divides selected simplexes
@@ -706,11 +707,8 @@ public:
 
             // Update counters and log the status
             iteration += 1;
-            // cout << iteration << ". Simplexes: " << _partition.size() << "  calls: " << _func->_calls << endl;
+            cout << iteration << ". Simplexes: " << _partition.size() << "  calls: " << _func->_calls << endl;
 
-            // if (iteration >= 1) {
-            //     break;
-            // };
         };
         timestamp_t end = get_timestamp();
         _duration = (end - start) / 1000000.0L;
