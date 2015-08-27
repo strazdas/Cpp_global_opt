@@ -1,13 +1,26 @@
-do: run
-
-# test:
-# 	g++ test.cpp -o test.out
-# 	clear
-# 	./test.out
-
-run: compile
+test_worker: compile_asimpl
 	clear
-	./main.out
+	./worker.py -exp=2 -exe=asimpl.out &
+
+do: run_asimpl
+
+run_asimpl: compile_asimpl
+	clear
+	./asimpl.out
+
+compile_asimpl: 
+	@echo "==================================================================================="
+	g++ -std=c++11 gkls.c rnd_gen.c Asimpl_main.cpp -o asimpl.out
+
+test:
+	g++ -std=c++11 test.cpp -o test.out
+	clear
+	./test.out
+
+# Deprecated: add algorithm name next to command
+# run: compile
+# 	clear
+# 	./main.out
 
 run_mpi: compile_mpi
 	qsub -pe orte 1 cls1.sh
@@ -23,7 +36,8 @@ run_elbme: compile_elbme
 	clear
 	./elbme.out
 
-compile:
+# Deprecated: add algorithm name next to command
+compile: 
 	@echo "==================================================================================="
 	g++ gkls.c rnd_gen.c main.cpp -o main.out
 
@@ -48,5 +62,10 @@ queue:
 num:
 	ls results/Disimpl-v/ | wc -l
 
-mem_check: compile
+mem_check: compile_asimpl
 	valgrind --tool=memcheck --leak-check=full -v ./main.out
+
+profiler: compile_asimpl
+	valgrind --tool=callgrind ./asimpl.out
+	# git clone https://github.com/jrfonseca/gprof2dot
+	./gprof2dot/gprof2dot.py -f callgrind callgrind.out.X | dot -Tsvg -o profile.svg

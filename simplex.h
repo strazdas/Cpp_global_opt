@@ -97,7 +97,7 @@ public:
     double _min_lb_value;
     double _metric__min_lb;       // _f_min - glob_f / _diameter
     
-    void init_parameters(Function* func){   // Called when all verts have been added
+    void init_parameters(Function* func) {   // Called when all verts have been added
         _D = _verts.size() - 1;
 
         // Note: claculating metrics needed by algorithm would reduce calculations
@@ -259,6 +259,14 @@ public:
 
     static double compare_diameter(Simplex* s1, Simplex* s2) {
         return s1->_diameter < s2->_diameter; 
+    };
+
+    static double ascending_min_lb_value(Simplex* s1, Simplex* s2) {
+        return s1->_min_lb_value < s2->_min_lb_value;
+    };
+
+    static double ascending_diameter(Simplex* s1, Simplex* s2) {
+        return s1->_diameter < s2->_diameter;
     };
 
     // static double compare_metric(Simplex* s1, Simplex* s2) {
@@ -589,7 +597,7 @@ void Simplex::extend_region_with_vertex_neighbours(Point* vertex, SimplexTree* r
 
 void Simplex::update_estimates(vector<Simplex*> simpls, Function* func) {   // Neighbours strategy - updates estimates
     SimplexTree* region;
-    int depth = 1;  // What about higher depth?
+    int depth = 0;  // What about higher depth?
     double E;
     if (1e-4 * fabs(func->_glob_f) > 1e-8) {
         E = 1e-4 * fabs(func->_glob_f);
@@ -599,11 +607,18 @@ void Simplex::update_estimates(vector<Simplex*> simpls, Function* func) {   // N
 
     for (int sid=0; sid < simpls.size(); sid++) {
         if (simpls[sid]->_should_estimates_be_updated) {
-            region = new SimplexTree();
+            region = new SimplexTree();  // del
+            double _max_grad_norm = -numeric_limits<double>::max();
             for (int vid=0; vid < simpls[sid]->_verts.size(); vid++) {
-                extend_region_with_vertex_neighbours(simpls[sid]->_verts[vid], region, depth);
+                // for (int vsid=0; vsid < simpls[sid]->_verts[vid]->_simplexes.size(); vsid++) {
+                //     if (simpls[sid]->_verts[vid]->_simplexes[vsid]->_grad_norm > _max_grad_norm) {
+                //         _max_grad_norm = simpls[sid]->_verts[vid]->_simplexes[vsid]->_grad_norm;
+                //     };
+                // };
+                extend_region_with_vertex_neighbours(simpls[sid]->_verts[vid], region, depth);  // del
             };
-            simpls[sid]->_L = region->_max_grad_norm;
+            simpls[sid]->_L = region->_max_grad_norm;  // del
+            // simpls[sid]->_L = _max_grad_norm;
 
             //// Find accurate lower bound point and value estimates with given precision
             if (simpls[sid]->_min_lb != 0) {  // Free allocated memory

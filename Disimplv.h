@@ -23,18 +23,20 @@ class Algorithm {
 public:
     Algorithm(){};
     string _name;
+    string _status;
     int _max_calls;
     string _stop_criteria;
     double _min_pe;
     double _duration;   // Duration in seconds
+    double _max_duration;   // Duration in seconds
     double _epsilon;    // How small simplexes should still be partitioned 
     vector<Simplex*> _partition;
     vector<Simplex*> _all_simplexes;
     Function* _func;
-
-    LowerBoundStrategy _lower_bound_strategy;     // Simplex lower bound estimation strategy 
-    LStrategy _L_strategy;  // Lipschitz constant estimation strategy
-    DivisionStrategy _division_strategy;      // Simplex edge division strategy
+ 
+    LowerBoundStrategy _lower_bound_strategy;   // Simplex lower bound estimation strategy 
+    LStrategy _L_strategy;                      // Lipschitz constant estimation strategy
+    DivisionStrategy _division_strategy;        // Simplex edge division strategy
     SimplexGradientStrategy _simplex_gradient_strategy;
     double _parent_L_part;
 
@@ -678,7 +680,6 @@ public:
             if (iteration == 0) {
                 simplexes_to_divide = _partition;
             } else {
-                // Note: sort partition here
                 simplexes_to_divide = select_simplexes_to_divide(iteration);
             };
             // Simplex::log_partition(_partition, simplexes_to_divide, "\nIteration ", iteration);
