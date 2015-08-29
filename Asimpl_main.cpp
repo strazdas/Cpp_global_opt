@@ -67,6 +67,7 @@ int main(int argc, char* argv[]) {
     alg->minimize(func);
 
     // Save results
+    cout << "Calls " << func->_calls << endl;
     string cmd;
     stringstream cmd_ss; 
     cmd_ss << "./" << callback

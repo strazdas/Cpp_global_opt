@@ -1,6 +1,6 @@
 test_worker: compile_asimpl
 	clear
-	./worker.py -exp=2 -exe=asimpl.out &
+	./worker.py -exp=4 -exe=asimpl.out &
 
 do: run_asimpl
 

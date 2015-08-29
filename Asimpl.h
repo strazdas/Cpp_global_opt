@@ -234,7 +234,7 @@ public:
         _func = func;
         timestamp_t start = get_timestamp();
         partition_feasable_region_combinatoricly();     // Note: Should not use global variables
-        Simplex::update_estimates(_partition, _func);
+        // Simplex::update_estimates(_partition, _func);
         // sort(_partition.begin(), _partition.end(), Simplex::ascending_min_lb_value);
         sort(_partition.begin(), _partition.end(), Simplex::ascending_diameter);
 
@@ -268,7 +268,7 @@ public:
                 _all_simplexes.push_back(new_simplexes[i]);
             };
             // cout << "Searching estimates for simplexes: " <<  _partition.size() << endl;
-            Simplex::update_estimates(_partition, _func);
+            // Simplex::update_estimates(_partition, _func);
             // sort(_partition.begin(), _partition.end(), Simplex::ascending_min_lb_value);
             sort(_partition.begin(), _partition.end(), Simplex::ascending_diameter);
 
