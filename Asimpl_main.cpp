@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
     cout << "Calls " << func->_calls << endl;
     string cmd;
     stringstream cmd_ss; 
-    cmd_ss << "./" << callback
+    cmd_ss << callback
            << " --calls=" << func->_calls
            << " --subregions=" << alg->_partition.size()
            << " --duration=" << alg->_duration  
