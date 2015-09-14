@@ -9,13 +9,23 @@
 #include <string>
 #include <sys/time.h>
 #include <vector>
-// #include <forward_list>
 #include "utils.h"
 #include "simplex.h"
 #include "functions.h"
 #include "Disimplv.h"
 
 using namespace std;
+
+// Note: parent simplexes could be deleted and not tracked for efficiency.
+// Note: _partition should be sorted globally by ascending _diameter (resorting/sorted_insertion would take less time)
+// Note: functions should not use global variables: should get and return values
+// Note: simplex neighbours should be updated before adding simplex to _partition
+//          What kind of structure should be used? Insert and remove operations: list.
+//          How should neighbours be found in initial partitioning? Not all are neighbours
+//              After initialization should iterate through all and check how many vertexes match.
+//                  What is fastest way to find two vertex set intersection?  set_intersection: http://www.cplusplus.com/reference/algorithm/set_intersection/
+//          All checks can be done using this brute force. 
+// Note: Move code from Algorithm to Asimpl.
 
 
 class Asimpl : public Algorithm {
@@ -25,6 +35,7 @@ public:
     Asimpl(double epsilon=0.0001, int max_calls=15000, double max_duration=3600) {
         _lower_bound_strategy = LowestEdgeLB;    // Lowest edge is determined by optimising
         _L_strategy = Neighbours;                // Simplex region to get max L from 
+        _depth = 2;                              // Max number of different verts to still be a neighbour
         _division_strategy = LongestHalf;        // Simplex division strategy - longest into two parts
         _simplex_gradient_strategy = FFMinVert;  // Single simplex L determination strategy (grad norm) 
         _stop_criteria = "x_dist_Serg";          // Stopping criteria
@@ -44,7 +55,90 @@ public:
         log_file.open("log/partition.txt");
         log_file.close();
     };
-    // forward_list<Simplex*> _simpls;
+
+    int _depth;
+
+    void partition_feasable_region_combinatoricly(){
+        int n = _func->_D;
+        int number_of_simpleces = 1;
+        for (int i = 1; i <= n; i++) {
+            number_of_simpleces *= i;
+        };
+
+        int teta[n];
+        for (int i=0; i < n; i++){
+            teta[i] = i;
+        };
+
+        do {
+            int triangle[n+1][n];
+
+            for (int k = 0; k < n; k++) {
+                triangle[0][k] = 0;
+            };
+
+            for (int vertex=0; vertex < n; vertex++) {
+                for (int j = 0; j < n + 1; j++) {
+                    triangle[vertex + 1][j] = triangle[vertex][j];
+                };
+                triangle[vertex + 1][teta[vertex]] = 1;
+            }
+
+            Simplex* simpl = new Simplex(_lower_bound_strategy, _L_strategy, _parent_L_part, _simplex_gradient_strategy);
+            for (int i=0; i < n + 1; i++){
+                Point* tmp_point = new Point(triangle[i], n);
+                Point* point = _func->get(tmp_point); 
+                if (tmp_point != point) {
+                    delete tmp_point;
+                };
+                simpl->add_vertex(point);
+            };
+            simpl->init_parameters(_func);
+            _partition.push_back(simpl);
+            _all_simplexes.push_back(simpl);
+
+        } while (next_permutation(teta, teta+n));
+
+        for (int i=0; i < _partition.size()-1; i++) {
+            for (int j=i+1; j < _partition.size(); j++) {
+                if (are_neighbours(_partition[i], _partition[j])) {
+                    _partition[i]->_neighbours.push_back(_partition[j]);
+                    _partition[j]->_neighbours.push_back(_partition[i]);
+                };
+                // Find out if they are neighbours if yes add each other to each Simplex::neighbours list
+            };
+        };
+    };
+
+    void print_neighbours() {  // helper function
+        cout << "Total: " << _partition.size() << endl;    
+        for (int sid=0; sid < _partition.size(); sid++) {
+            cout << "Simplex: ";
+            cout << _partition[sid];
+            cout << "      Neighbours are:";
+
+            // for (int nid=0; nid < _partition[sid]->_neighbours.size(); nid++) {
+            for (list<Simplex*>::iterator it=_partition[sid]->_neighbours.begin(); it != _partition[sid]->_neighbours.end(); ++it) {
+                cout << ' ' << (*it);
+            };
+            cout << endl;
+        };
+    };
+
+    bool are_neighbours(Simplex* s1, Simplex* s2) {
+        // Assumption that s1._verts an s2._verts are sorted
+        vector<Simplex*> v(s1->_neighbours.size()  + s2->_neighbours.size());
+        vector<Simplex*>::iterator it;
+        it=set_intersection(s1->_neighbours.begin(), s1->_neighbours.end(), s2->_neighbours.begin(), s2->_neighbours.end(), v.begin());
+        v.resize(it - v.begin()); 
+        if (v.size() <= _depth) {
+            v.clear();
+            return true;
+        } else {
+            v.clear();
+            return false;
+        };
+    };
 
     // LongestEdgeLB, Neighbours
     vector<Simplex*> select_simplexes_by_lowest_edge_lb() {
@@ -230,12 +324,85 @@ public:
         return selected_simplexes;
     };
 
+    vector<Simplex*> divide_simplex(Simplex* simplex, string strategy="longest_half") {
+        vector<Simplex*> divided_simplexes;
+        if (strategy== "longest_half") {
+            // Find middle point
+            int n = _func->_D;
+            double c[n];
+            for (int i=0; i < n; i++) {
+                c[i] = (simplex->_le_v1->_X[i] + simplex->_le_v2->_X[i]) / 2.;
+            };
+            Point* middle_point = _func->get(c, n);
+            // Construct two new simplexes using this middle point.
+            Simplex* left_simplex = new Simplex(_lower_bound_strategy, _L_strategy, _parent_L_part, _simplex_gradient_strategy);
+            Simplex* right_simplex = new Simplex(_lower_bound_strategy, _L_strategy, _parent_L_part, _simplex_gradient_strategy);
+
+            for (int i=0; i < simplex->size(); i++){
+                // Point* point = _func->get(new Point(triangle[i], n)); 
+                if (simplex->_verts[i] != simplex->_le_v1){
+                    right_simplex->add_vertex(simplex->_verts[i]);
+                } else {
+                    right_simplex->add_vertex(middle_point);
+                };
+                if (simplex->_verts[i] != simplex->_le_v2) {
+                    left_simplex->add_vertex(simplex->_verts[i]);
+                } else {
+                    left_simplex->add_vertex(middle_point);
+                };
+                simplex->_verts[i]->_neighbours_estimates_should_be_updated();
+            };
+            middle_point->_neighbours_estimates_should_be_updated();   // Note: this method should also be updated to take into account Algorithm._depth
+
+            left_simplex->_parent = simplex;
+            right_simplex->_parent = simplex;
+            left_simplex->init_parameters(_func);
+            right_simplex->init_parameters(_func);
+
+            // Update new simplexes neighbours based on their parent neighbours
+            // Divided simplexes are neighbours.
+            left_simplex->_neighbours.push_back(right_simplex);
+            right_simplex->_neighbours.push_back(left_simplex);
+
+            Simplex* neighbour;
+            // Iterate through parents neighbours and check if any of them are  child neighbours
+            for (list<Simplex*>::iterator it=simplex->_neighbours.begin(); it != simplex->_neighbours.end(); ++it) {
+                neighbour = *it;
+                neighbour->_neighbours.remove(simplex);
+                if (are_neighbours(left_simplex, neighbour)) {
+                    left_simplex->_neighbours.push_back(neighbour);
+                    neighbour->_neighbours.push_back(left_simplex);
+                };
+                if (are_neighbours(right_simplex, neighbour)) {
+                    right_simplex->_neighbours.push_back(neighbour);
+                    neighbour->_neighbours.push_back(right_simplex);
+                };
+            };
+
+            // for (int i=0; i < _partition.size()-1; i++) {
+            //     for (int j=i+1; j < _partition.size(); j++) {
+            //         if (are_neighbours(_partition[i], _partition[j])) {
+            //             _partition[i]->_neighbours.push_back(_partition[j]);
+            //             _partition[j]->_neighbours.push_back(_partition[i]);
+            //         };
+            //         // Find out if they are neighbours if yes add each other to each Simplex::neighbours list
+            //     };
+            // };
+
+            simplex->_is_in_partition = false;
+
+            divided_simplexes.push_back(left_simplex);
+            divided_simplexes.push_back(right_simplex);
+            return divided_simplexes;
+        };
+    };
+
+
     void minimize(Function* func){
         _func = func;
         timestamp_t start = get_timestamp();
         partition_feasable_region_combinatoricly();     // Note: Should not use global variables
-        // Simplex::update_estimates(_partition, _func);
-        // sort(_partition.begin(), _partition.end(), Simplex::ascending_min_lb_value);
+        Simplex::update_estimates(_partition, _func);
         sort(_partition.begin(), _partition.end(), Simplex::ascending_diameter);
 
         int iteration = 0;
@@ -253,6 +420,7 @@ public:
             for (int i=0; i < simplexes_to_divide.size(); i++) {
                 vector<Simplex*> divided_simplexes = divide_simplex(simplexes_to_divide[i]);
 
+
                 for (int j=0; j < divided_simplexes.size(); j++) {
                     new_simplexes.push_back(divided_simplexes[j]);
                 };
@@ -268,8 +436,7 @@ public:
                 _all_simplexes.push_back(new_simplexes[i]);
             };
             // cout << "Searching estimates for simplexes: " <<  _partition.size() << endl;
-            // Simplex::update_estimates(_partition, _func);
-            // sort(_partition.begin(), _partition.end(), Simplex::ascending_min_lb_value);
+            Simplex::update_estimates(_partition, _func);
             sort(_partition.begin(), _partition.end(), Simplex::ascending_diameter);
 
             // Update counters and log the status

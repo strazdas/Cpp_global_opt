@@ -3,6 +3,9 @@
 /* Simplex is a simplex used for solving main problem, e.g. minimizing GKLS function */
 #include "Eigen/Dense"
 #include "Elbme.h"
+#include <list>         // std::list
+
+using namespace std;
 
 
 enum LowerBoundStrategy { MinVert, LongestEdgeLB, LowestEdgeLB, All };
@@ -60,24 +63,15 @@ public:
     LStrategy _L_strategy;
     SimplexGradientStrategy _simplex_gradient_strategy;
 
-    // Parameters for lower bound simplex
     int _D;                       // Variable space dimension
-    // double _L;                 // Problem lower bound
-    // vector<Point*> _verts;     // Points with coordinates and values
-    // Point* _min_vert;          // Pointer to vertex with lowest function value 
-    // double _diameter;          // Longest edge length
-    // Point* le_v1;              // I don't know why this is needed.
-    // Point* le_v2;
-    // Point* _min_lb;
-    // double _min_lb_value;
     double _tolerance;            // Distance between _min_lb and _min_vert  or _min_lb_value and _min_vert_value
 
-    // Parameters for real problem simplex
-    vector<Point*> _verts;
+    vector<Point*> _verts;        // Simplex vertexes (points with coordinates and values)
     bool _is_in_partition;
     bool _should_be_divided;  // Should be divided in next iteration
     bool _should_estimates_be_updated;   // Should Lipschitz constant estimate and its lower bound be updated
     Simplex* _parent;
+    list<Simplex*> _neighbours;
 
     Point* _le_v1;      // Longest edge vertex1
     Point* _le_v2; 
@@ -99,6 +93,7 @@ public:
     
     void init_parameters(Function* func) {   // Called when all verts have been added
         _D = _verts.size() - 1;
+        sort(_verts.begin(), _verts.end());   // To find verts intersection verts have to be sorted
 
         // Note: claculating metrics needed by algorithm would reduce calculations
         double edge_length;  // Temporary variable
@@ -132,10 +127,11 @@ public:
             E = 1e-8;
         };
         _grad_norm = find_simplex_gradient_norm(_simplex_gradient_strategy);      // Check in the article if global Lipschitz constant is defined
-        _L = _grad_norm;
-        _min_lb = find_accurate_lb_min_estimate(_verts, _L);
-        _min_lb_value = _min_lb->_values[0];
-        _metric__min_lb = (_min_lb_value - (func->_glob_f + E)) / _diameter;
+        //// These should be used only for no-neighbours stragtegy, which is not the case
+        // _L = _grad_norm;
+        // _min_lb = find_accurate_lb_min_estimate(_verts, _L);
+        // _min_lb_value = _min_lb->_values[0];
+        // _metric__min_lb = (_min_lb_value - (func->_glob_f + E)) / _diameter;
     };
 
     // Need a scenario where a single simplex is created and I can test with it  
@@ -337,6 +333,7 @@ public:
     virtual ~Simplex(){
         delete _min_lb;
         _verts.clear();
+        _neighbours.clear();
     };  
 };
 
@@ -576,69 +573,88 @@ SimplexTree::~SimplexTree() {
 };
 
 
-void Simplex::extend_region_with_vertex_neighbours(Point* vertex, SimplexTree* region, int depth) {
-    // Recursively adds vertex neighbours to region
-    for (int sid=0; sid < vertex->_simplexes.size(); sid++) {
-        Simplex* simpl = vertex->_simplexes[sid];
-        Simplex* result = region->add(simpl);
-        if (depth != 0) {
-            if (result == 0 && simpl->_is_in_partition) {
-                for (int vid=0; vid < simpl->_verts.size(); vid++) {
-                    if (simpl->_verts[vid] != vertex) {
-                        extend_region_with_vertex_neighbours(simpl->_verts[vid], region, depth-1);
-                    };
-                };
-            };
-        };    
-    };
-};
+// void Simplex::extend_region_with_vertex_neighbours(Point* vertex, SimplexTree* region, int depth) {
+//     // Recursively adds vertex neighbours to region
+//     for (int sid=0; sid < vertex->_simplexes.size(); sid++) {
+//         Simplex* simpl = vertex->_simplexes[sid];
+//         Simplex* result = region->add(simpl);
+//         if (depth != 0) {
+//             if (result == 0 && simpl->_is_in_partition) {
+//                 for (int vid=0; vid < simpl->_verts.size(); vid++) {
+//                     if (simpl->_verts[vid] != vertex) {
+//                         extend_region_with_vertex_neighbours(simpl->_verts[vid], region, depth-1);
+//                     };
+//                 };
+//             };
+//         };    
+//     };
+// };
 
 void Simplex::update_estimates(vector<Simplex*> simpls, Function* func) {   // Neighbours strategy - updates estimates
-    // SimplexTree* region;
-    // int depth = 0;  // What about higher depth?
-    // double E;
-    // if (1e-4 * fabs(func->_glob_f) > 1e-8) {
-    //     E = 1e-4 * fabs(func->_glob_f);
-    // } else {
-    //     E = 1e-8;
+    SimplexTree* region;
+    double E;
+    if (1e-4 * fabs(func->_glob_f) > 1e-8) {
+        E = 1e-4 * fabs(func->_glob_f);
+    } else {
+        E = 1e-8;
+    };
+
+    for (int sid=0; sid < simpls.size(); sid++) {
+        if (simpls[sid]->_should_estimates_be_updated) {
+            // TODO: Compare strategies: a) Simply iterate through b) construct region c) track neigbours when creating new simplexes
+            // [C strategy: 2-diff-verts]
+            // double _max_grad_norm = -numeric_limits<double>::max();
+            double _max_grad_norm = simpls[sid]->_grad_norm;
+
+            // Iterate in list way through _neighbours:
+            for (list<Simplex*>::iterator it=simpls[sid]->_neighbours.begin(); it != simpls[sid]->_neighbours.end(); ++it) {
+                if ((*it)->_grad_norm > _max_grad_norm) {
+                    _max_grad_norm = (*it)->_grad_norm;
+                };
+            };
+            // for (int nid=0; nid < simpls[sid]->_neighbours.size(); nid++) {
+            //     if (simpls[sid]->_neighbours[nid]->_grad_norm > _max_grad_norm) {
+            //         _max_grad_norm = simpls[sid]->_neighbours[nid]->_grad_norm;
+            //     };
+            // };
+            simpls[sid]->_L = _max_grad_norm;
+
+            // [B strategy: 1-same-vert]
+            // region = new SimplexTree();
+            // for (int vid=0; vid < simpls[sid]->_verts.size(); vid++) {
+            //     extend_region_with_vertex_neighbours(simpls[sid]->_verts[vid], region, depth);
+            // };
+            // simpls[sid]->_L = region->_max_grad_norm;
+            // delete region;
+
+            // [A strategy: 1-same-vert]
+            // double _max_grad_norm = -numeric_limits<double>::max();
+            // for (int vid=0; vid < simpls[sid]->_verts.size(); vid++) {
+            //     for (int vsid=0; vsid < simpls[sid]->_verts[vid]->_simplexes.size(); vsid++) {
+            //         if (simpls[sid]->_verts[vid]->_simplexes[vsid]->_grad_norm > _max_grad_norm) {
+            //             _max_grad_norm = simpls[sid]->_verts[vid]->_simplexes[vsid]->_grad_norm;
+            //         };
+            //     };
+            // };
+            // simpls[sid]->_L = _max_grad_norm;
+    
+            //// Find accurate lower bound point and value estimates with given precision
+            if (simpls[sid]->_min_lb != 0) {  // Free allocated memory
+                delete simpls[sid]->_min_lb;
+            };
+            simpls[sid]->_min_lb = simpls[sid]->find_accurate_lb_min_estimate(simpls[sid]->_verts, simpls[sid]->_L);
+            simpls[sid]->_min_lb_value = simpls[sid]->_min_lb->_values[0];
+    
+            simpls[sid]->_metric__vert_min_value = (simpls[sid]->_min_vert_value - (func->_glob_f + E)) / simpls[sid]->_diameter;
+    
+            simpls[sid]->_metric__min_lb = (simpls[sid]->_min_lb_value - (func->_glob_f + E)) / simpls[sid]->_diameter;
+            simpls[sid]->_should_estimates_be_updated = false;
+        };
+    };
+    // Note: gali būti, kad slope apibrėžimas pas mane netinkamas atmetant
+    // simpleksus su epsilon (potencialiai optimalių simpleksų parinkimo metu).
+    //     simpls[sid]->_lb = simpls[sid].find_lb();
     // };
-    //
-    // for (int sid=0; sid < simpls.size(); sid++) {
-    //     if (simpls[sid]->_should_estimates_be_updated) {
-    //         region = new SimplexTree();  // del
-    //         double _max_grad_norm = -numeric_limits<double>::max();
-    //         for (int vid=0; vid < simpls[sid]->_verts.size(); vid++) {
-    //             // for (int vsid=0; vsid < simpls[sid]->_verts[vid]->_simplexes.size(); vsid++) {
-    //             //     if (simpls[sid]->_verts[vid]->_simplexes[vsid]->_grad_norm > _max_grad_norm) {
-    //             //         _max_grad_norm = simpls[sid]->_verts[vid]->_simplexes[vsid]->_grad_norm;
-    //             //     };
-    //             // };
-    //             extend_region_with_vertex_neighbours(simpls[sid]->_verts[vid], region, depth);  // del
-    //         };
-    //         simpls[sid]->_L = region->_max_grad_norm;  // del
-    //         // simpls[sid]->_L = _max_grad_norm;
-    //
-    //         //// Find accurate lower bound point and value estimates with given precision
-    //         if (simpls[sid]->_min_lb != 0) {  // Free allocated memory
-    //             delete simpls[sid]->_min_lb;
-    //         };
-    //         simpls[sid]->_min_lb = simpls[sid]->find_accurate_lb_min_estimate(simpls[sid]->_verts, simpls[sid]->_L);
-    //         simpls[sid]->_min_lb_value = simpls[sid]->_min_lb->_values[0];
-    //
-    //         simpls[sid]->_metric__vert_min_value = (simpls[sid]->_min_vert_value - (func->_glob_f + E)) / simpls[sid]->_diameter;
-    //
-    //         simpls[sid]->_metric__min_lb = (simpls[sid]->_min_lb_value - (func->_glob_f + E)) / simpls[sid]->_diameter;
-    //         delete region;
-    //         simpls[sid]->_should_estimates_be_updated = false;
-    //     };
-    // };
-    //
-    // // Note: Bus labiau dalinami prasti, bet dideli simplexai
-    //
-    // // Note: gali būti, kad slope apibrėžimas pas mane netinkamas atmetant
-    // // simpleksus su epsilon (potencialiai optimalių simpleksų parinkimo metu).
-    // //     simpls[sid]->_lb = simpls[sid].find_lb();
-    // // };
 };
 
 #endif
