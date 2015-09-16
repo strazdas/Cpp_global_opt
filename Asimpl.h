@@ -35,7 +35,7 @@ public:
     Asimpl(double epsilon=0.0001, int max_calls=15000, double max_duration=3600) {
         _lower_bound_strategy = LowestEdgeLB;    // Lowest edge is determined by optimising
         _L_strategy = Neighbours;                // Simplex region to get max L from 
-        _depth = 2;                              // Max number of different verts to still be a neighbour
+        _max_diff_verts_to_be_neighbour = 2;     // Max number of different verts to still be a neighbour
         _division_strategy = LongestHalf;        // Simplex division strategy - longest into two parts
         _simplex_gradient_strategy = FFMinVert;  // Single simplex L determination strategy (grad norm) 
         _stop_criteria = "x_dist_Serg";          // Stopping criteria
@@ -43,6 +43,8 @@ public:
         _epsilon = epsilon;                      // Solution accuracy
         _max_calls = max_calls;
         _max_duration = max_duration;
+
+        _iteration = 0;         // Algorithm iteration for debuging purposes
 
         // Construct algorithm name
         _name = "Asimpl";
@@ -56,7 +58,8 @@ public:
         log_file.close();
     };
 
-    int _depth;
+    int _max_diff_verts_to_be_neighbour;
+    int _iteration;
 
     void partition_feasable_region_combinatoricly(){
         int n = _func->_D;
@@ -113,31 +116,39 @@ public:
     void print_neighbours() {  // helper function
         cout << "Total: " << _partition.size() << endl;    
         for (int sid=0; sid < _partition.size(); sid++) {
-            cout << "Simplex: ";
+            _partition[sid]->print(); 
+            cout << " Simplex: ";
             cout << _partition[sid];
+            cout << "(" << _partition[sid]->_L << ")";
             cout << "      Neighbours are:";
+            cout << "(total: " << _partition[sid]->_neighbours.size() << ")";
 
             // for (int nid=0; nid < _partition[sid]->_neighbours.size(); nid++) {
+            Simplex* neighbour;
             for (list<Simplex*>::iterator it=_partition[sid]->_neighbours.begin(); it != _partition[sid]->_neighbours.end(); ++it) {
+                neighbour = *it;
                 cout << ' ' << (*it);
             };
-            cout << endl;
+            cout << endl << endl;
         };
     };
 
     bool are_neighbours(Simplex* s1, Simplex* s2) {
-        // Assumption that s1._verts an s2._verts are sorted
-        vector<Simplex*> v(s1->_neighbours.size()  + s2->_neighbours.size());
-        vector<Simplex*>::iterator it;
-        it=set_intersection(s1->_neighbours.begin(), s1->_neighbours.end(), s2->_neighbours.begin(), s2->_neighbours.end(), v.begin());
-        v.resize(it - v.begin()); 
-        if (v.size() <= _depth) {
-            v.clear();
+        vector<Point*> same_verts(s1->_verts.size()  + s2->_verts.size());
+        vector<Point*>::iterator it;
+
+        sort(s1->_verts.begin(), s1->_verts.end());
+        sort(s2->_verts.begin(), s2->_verts.end());
+        it = set_intersection(s1->_verts.begin(), s1->_verts.end(), s2->_verts.begin(), s2->_verts.end(), same_verts.begin());
+
+        int same_verts_count = it - same_verts.begin();
+        int diff_verts_count = s1->_verts.size() - same_verts_count;
+        same_verts.clear();
+
+        if (diff_verts_count <= _max_diff_verts_to_be_neighbour) {
             return true;
-        } else {
-            v.clear();
-            return false;
         };
+        return false;
     };
 
     // LongestEdgeLB, Neighbours
@@ -352,7 +363,7 @@ public:
                 };
                 simplex->_verts[i]->_neighbours_estimates_should_be_updated();
             };
-            middle_point->_neighbours_estimates_should_be_updated();   // Note: this method should also be updated to take into account Algorithm._depth
+            middle_point->_neighbours_estimates_should_be_updated();   // Note: this method should also be updated to take into account Algorithm._max_diff_verts_to_be_neighbour
 
             left_simplex->_parent = simplex;
             right_simplex->_parent = simplex;
@@ -379,16 +390,6 @@ public:
                 };
             };
 
-            // for (int i=0; i < _partition.size()-1; i++) {
-            //     for (int j=i+1; j < _partition.size(); j++) {
-            //         if (are_neighbours(_partition[i], _partition[j])) {
-            //             _partition[i]->_neighbours.push_back(_partition[j]);
-            //             _partition[j]->_neighbours.push_back(_partition[i]);
-            //         };
-            //         // Find out if they are neighbours if yes add each other to each Simplex::neighbours list
-            //     };
-            // };
-
             simplex->_is_in_partition = false;
 
             divided_simplexes.push_back(left_simplex);
@@ -405,11 +406,10 @@ public:
         Simplex::update_estimates(_partition, _func);
         sort(_partition.begin(), _partition.end(), Simplex::ascending_diameter);
 
-        int iteration = 0;
         while (_func->_calls <= _max_calls && _duration <= _max_duration && !_func->is_accurate_enougth()) { // _func->pe() > _min_pe){
             // Selects simplexes to divide
             vector<Simplex*> simplexes_to_divide;
-            if (iteration == 0) {
+            if (_iteration == 0) {
                 simplexes_to_divide = _partition;
             } else {
                 simplexes_to_divide = select_simplexes_to_divide();
@@ -440,7 +440,7 @@ public:
             sort(_partition.begin(), _partition.end(), Simplex::ascending_diameter);
 
             // Update counters and log the status
-            iteration += 1;
+            _iteration += 1;
             // cout << iteration << ". Simplexes: " << _partition.size() << "  calls: " << _func->_calls << endl;
             timestamp_t end = get_timestamp();
             _duration = (end - start) / 1000000.0L;
