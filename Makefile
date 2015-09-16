@@ -7,10 +7,11 @@ compile_asimpl:
 
 run_asimpl: compile_asimpl
 	clear
-	./asimpl.out
+	./asimpl.out --gkls_cls=1 --gkls_fid=1
+	
 
 test:
-	g++ -std=c++11 test.cpp -o test.out
+	g++ test.cpp -o test.out
 	clear
 	./test.out
 
