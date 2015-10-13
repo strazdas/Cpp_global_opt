@@ -1,4 +1,4 @@
-do: compile_asimpl
+do: run_asimpl
 
 compile_asimpl:
 	@echo "==================================================================================="
@@ -7,7 +7,7 @@ compile_asimpl:
 
 run_asimpl: compile_asimpl
 	clear
-	./asimpl.out --gkls_cls=1 --gkls_fid=1
+	./asimpl.out --gkls_cls=5 --gkls_fid=84
 	
 
 test:
