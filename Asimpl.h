@@ -403,10 +403,6 @@ public:
         _func = func;
         timestamp_t start = get_timestamp();
         partition_feasable_region_combinatoricly();     // Note: Should not use global variables
-        for (int i=0; i < _partition.size(); i++) {
-            _partition[i]->print();
-        };
-        exit(0);
 
         Simplex::update_estimates(_partition, _func);
         sort(_partition.begin(), _partition.end(), Simplex::ascending_diameter);
@@ -446,7 +442,8 @@ public:
 
             // Update counters and log the status
             _iteration += 1;
-            // cout << iteration << ". Simplexes: " << _partition.size() << "  calls: " << _func->_calls << endl;
+            cout << _iteration << ". Simplexes: " << _partition.size() << "  calls: " << _func->_calls << "  f_min:" << _func->_f_min << endl;
+
             timestamp_t end = get_timestamp();
             _duration = (end - start) / 1000000.0L;
 
