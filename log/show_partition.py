@@ -1,7 +1,9 @@
 # should construct simplexes and call show potential function
+import sys
 from numpy import array as a, matrix as m, arange, sqrt, isnan, pi, cos, sin, mean
 from itertools import permutations
 from mpl_toolkits.mplot3d import axes3d
+
 
 def show_partition(filename='partition.txt'):
     from matplotlib import pyplot as plt
@@ -159,4 +161,7 @@ def sort_vertexes_longest_edge_first(simplex):
     return simplex
 
 if __name__ == '__main__':
-    show_partition()
+    if len(sys.argv) > 1:
+        show_partition(sys.argv[1])
+    else:
+        show_partition()
