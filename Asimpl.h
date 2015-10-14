@@ -440,6 +440,11 @@ public:
             Simplex::update_estimates(_partition, _func);
             sort(_partition.begin(), _partition.end(), Simplex::ascending_diameter);
 
+            if (_iteration == 141) {
+                Simplex::log_partition(_partition, simplexes_to_divide, "Partition:", _iteration);
+                exit(0);
+            };
+
             // Update counters and log the status
             _iteration += 1;
             cout << _iteration << ". Simplexes: " << _partition.size() << "  calls: " << _func->_calls << "  f_min:" << _func->_f_min << endl;

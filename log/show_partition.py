@@ -14,14 +14,11 @@ def show_partition(filename='partition.txt'):
     title = ''
     # ok = False
     for line in f:
-        # if 'Iteration 56' in line:
-        #     ok = True
-        # if ok:
-        if 'Iteration' in line:
+        if 'Iteration' in line or 'Partition' in line:
             # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12,6))
             # ax1.axis([-0.05, 1.05, -0.05, 1.05])
             title = line
-            iteration = int(line.strip().strip('Iteration:').strip())
+            iteration = int(line.strip().strip('Iteration:').strip('Partition:').strip())
             continue
         if 'Selected' in line:
             selected_mode = True

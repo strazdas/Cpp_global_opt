@@ -293,7 +293,7 @@ public:
     static void log_partition(vector<Simplex*> simplexes,
                               vector<Simplex*> selected,
                               string label="Partition:",
-                              int iteration=0){
+                              int iteration=0) {
        ofstream log_file; 
        log_file.open("log/partition.txt", ios::app);
        log_file << label << iteration << ":" << endl;
