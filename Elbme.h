@@ -24,7 +24,7 @@ class Elbme {   // For efficiency do not store links to parents
 public:
     Elbme(vector<Point*> verts, double L) {
         _verts = verts;
-        sort(_verts.begin(), _verts.end(), Point::compare_by_value);     // When several longest edges exist: randomness? // Note: Should sorting be done descending?
+        sort(_verts.begin(), _verts.end(), Point::compare_by_value_dec);     // When several longest edges exist: randomness? // Note: Should sorting be done descending?
         _L = L;
         _D = _verts.size() - 1;
         _partition.push_back(new Subsimplex(_verts, _L));

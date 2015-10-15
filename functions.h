@@ -103,6 +103,10 @@ public:
         return p1->_values[0] < p2->_values[0];
     };
 
+    static bool compare_by_value_dec(Point* p1, Point* p2) {
+        return p1->_values[0] > p2->_values[0];
+    };
+
     friend ostream& operator<<(ostream& o, const Point& p){
         for (int i=0; i < p._D; i++) {
             o << p._X[i];
