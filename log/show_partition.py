@@ -160,8 +160,36 @@ def sort_vertexes_longest_edge_first(simplex):
     simplex.insert(0, vi)
     return simplex
 
+
+def show_diff_indexes(f1, f2):
+    f1_content = open(f1).read().split('\n')
+    indexes = []
+    not_matching_lines = []
+    for i, l2 in enumerate(open(f2)):
+        found_match = False
+        for j, l1 in enumerate(f1_content):
+            line_match = True
+            for i2 in l2.split(';'):
+                l1_elems = [e.strip() for e in l1.split(';')]
+                if i2.strip() not in l1_elems:
+                    line_match = False
+            if line_match:
+                found_match = True
+                break
+        if not found_match:
+            indexes.append(i)
+            not_matching_lines.append(l2)
+    return indexes, not_matching_lines
+
+
 if __name__ == '__main__':
-    if len(sys.argv) > 1:
+    if len(sys.argv) == 3:
+        indexes, lines = show_diff_indexes(sys.argv[1], sys.argv[2])
+        print(indexes)
+        print('No match for these lines in ' + sys.argv[2])
+        for line in lines:
+            print(line.strip())
+    elif len(sys.argv) == 2:
         show_partition(sys.argv[1])
     else:
         show_partition()
