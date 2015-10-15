@@ -61,7 +61,7 @@ public:
     int _max_diff_verts_to_be_neighbour;
     int _iteration;
 
-    void partition_feasable_region_combinatoricly(){
+    void partition_feasable_region_combinatoricly() {
         int n = _func->_D;
         int number_of_simpleces = 1;
         for (int i = 1; i <= n; i++) {
@@ -421,7 +421,6 @@ public:
             for (int i=0; i < simplexes_to_divide.size(); i++) {
                 vector<Simplex*> divided_simplexes = divide_simplex(simplexes_to_divide[i]);
 
-
                 for (int j=0; j < divided_simplexes.size(); j++) {
                     new_simplexes.push_back(divided_simplexes[j]);
                 };
@@ -440,18 +439,12 @@ public:
             Simplex::update_estimates(_partition, _func);
             sort(_partition.begin(), _partition.end(), Simplex::ascending_diameter);
 
-            if (_iteration == 141) {
-                Simplex::log_partition(_partition, simplexes_to_divide, "Partition:", _iteration);
-                exit(0);
-            };
-
             // Update counters and log the status
             _iteration += 1;
-            cout << _iteration << ". Simplexes: " << _partition.size() << "  calls: " << _func->_calls << "  f_min:" << _func->_f_min << endl;
+            // cout << _iteration << ". Simplexes: " << _partition.size() << "  calls: " << _func->_calls << "  f_min:" << _func->_f_min << endl;
 
             timestamp_t end = get_timestamp();
             _duration = (end - start) / 1000000.0L;
-
         };
 
         if ((_func->_calls <= _max_calls) && (_duration <= _max_duration)) {

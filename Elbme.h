@@ -24,6 +24,7 @@ class Elbme {   // For efficiency do not store links to parents
 public:
     Elbme(vector<Point*> verts, double L) {
         _verts = verts;
+        sort(_verts.begin(), _verts.end(), Point::compare_by_value);     // When several longest edges exist: randomness? // Note: Should sorting be done descending?
         _L = L;
         _D = _verts.size() - 1;
         _partition.push_back(new Subsimplex(_verts, _L));
@@ -51,18 +52,12 @@ public:
                 min_i = i;
             };
         };
-        // if (lb_value < 0.0000001) {
-        //     cout << "Lb value: "<< lb_value << endl;
-        //     cout << " calculated:  L " << L << " dist " << dist << endl; //l2norm(middle_point, verts[min_i]) << endl;
-        //     cout << " vert value " << endl; // verts[min_i]->_values[0] << endl;
-        //     cout << " min i" << min_i << endl; // verts[min_i]->_values[0] << endl;
-        //     exit(0);
-        // };
         return lb_value;
     };
 
     vector<Subsimplex*> divide_subsimplex(Subsimplex* subsimplex, string strategy="longest_half") {
         vector<Subsimplex*> divided_subsimplexes;
+
         if (strategy== "longest_half") {
             // Find middle point
             double c[_D];
@@ -71,6 +66,7 @@ public:
             };
 
             Point* middle_point = new Point(c, _D);
+
             _points.push_back(middle_point);
             middle_point->add_value(get_lb_value(_verts, _L, middle_point));
 
@@ -136,13 +132,6 @@ public:
             // sort partition by min lb value 
             sort(_partition.begin(), _partition.end(), Subsimplex::compare_by_min_lb_value);
 
-            // cout << "Sorted values: ";
-            // for (int i=0; i < _partition.size(); i++) {
-            //     cout << _partition[i]->_min_lb_value << ", ";
-            // };
-            // cout << endl;
-
-            
             tolerance = _partition[0]->_tolerance;
             iter += 1;
             // cout << it << ". tol " << tolerance << " acc " << _accuracy << " estimate " << _partition[0]->_min_vert_value << " min_lb " << _partition[0]->_min_lb_value << " diameter " << _partition[0]->_diameter << endl;
