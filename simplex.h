@@ -93,9 +93,13 @@ public:
     
     void init_parameters(Function* func) {   // Called when all verts have been added
         _D = _verts.size() - 1;
-        sort(_verts.begin(), _verts.end());   // To find verts intersection verts have to be sorted
+        
+        // Note: claculating metrics needed by algorithm here would reduce calculations
 
-        // Note: claculating metrics needed by algorithm would reduce calculations
+        // Sort vertexes
+        sort(_verts.begin(), _verts.end(), Point::compare_by_value);  // Is there calculation of intersection anywhere in the algorithm, in this case sorting by adress is needed?
+
+        // Find longest edge length and verts
         double edge_length;  // Temporary variable
         for (int a=0; a < _verts.size(); a++) {
             // Finds _diameter
@@ -111,8 +115,7 @@ public:
             };
         }; 
 
-        // Sort vertexes and set _min_vert, _max_vert
-        sort(_verts.begin(), _verts.end(), Point::compare_by_value);
+        // Find min and max verts
         _min_vert = _verts[0];
         _min_vert_value = _min_vert->_values[0];
         _max_vert = _verts[_verts.size()-1];
