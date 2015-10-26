@@ -137,13 +137,20 @@ public:
         vector<Point*> same_verts(s1->_verts.size()  + s2->_verts.size());
         vector<Point*>::iterator it;
 
-        sort(s1->_verts.begin(), s1->_verts.end());
-        sort(s2->_verts.begin(), s2->_verts.end());
-        it = set_intersection(s1->_verts.begin(), s1->_verts.end(), s2->_verts.begin(), s2->_verts.end(), same_verts.begin());
+        vector<Point*> s1_verts = s1->_verts;
+        vector<Point*> s2_verts = s2->_verts;
+
+
+        sort(s1_verts.begin(), s1_verts.end());
+        sort(s2_verts.begin(), s2_verts.end());
+        it = set_intersection(s1_verts.begin(), s1_verts.end(), s2_verts.begin(), s2_verts.end(), same_verts.begin());
 
         int same_verts_count = it - same_verts.begin();
-        int diff_verts_count = s1->_verts.size() - same_verts_count;
+        int diff_verts_count = s1_verts.size() - same_verts_count;
+
         same_verts.clear();
+        s1_verts.clear();
+        s2_verts.clear();
 
         if (diff_verts_count <= _max_diff_verts_to_be_neighbour) {
             return true;
