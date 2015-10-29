@@ -223,14 +223,14 @@ public:
         return v - 1;
     };
 
-    vector<Simplex*> select_simplexes_by_lowest_edge_lb_and_diameter_convex_hull() {
+    vector<Simplex*> select_simplexes_by_lb_estimate_and_diameter_convex_hull() {
         vector<Simplex*> selected_simplexes;
 
         // Sort simplexes by their diameter
         vector<Simplex*> sorted_partition = _partition;   // Note: Could sort globally, resorting would take less time
 
         // Simplex::print(sorted_partition, "Selecting for division from: ");
-        // sort(sorted_partition.begin(), sorted_partition.end(), Simplex::compare_diameter);
+        sort(sorted_partition.begin(), sorted_partition.end(), Simplex::compare_diameter);
         double f_min = _func->_f_min;
 
         // Find simplex with  minimum metric  and  unique diameters
@@ -333,8 +333,7 @@ public:
 
 
     virtual vector<Simplex*> select_simplexes_to_divide() {
-        // vector<Simplex*> selected_simplexes = select_simplexes_by_lowest_edge_lb();
-        vector<Simplex*> selected_simplexes = select_simplexes_by_lowest_edge_lb_and_diameter_convex_hull();
+        vector<Simplex*> selected_simplexes = select_simplexes_by_lb_estimate_and_diameter_convex_hull();
 
         for (int i=0; i < selected_simplexes.size(); i++){
             selected_simplexes[i]->_is_in_partition = false;
@@ -405,6 +404,27 @@ public:
         };
     };
 
+    vector<Simplex*> divide_simplexes(vector<Simplex*> simplexes) {
+        // Divides selected simplexes
+        vector<Simplex*> new_simplexes;
+        for (int i=0; i < simplexes.size(); i++) {
+            vector<Simplex*> divided_simplexes = divide_simplex(simplexes[i]);
+
+            for (int j=0; j < divided_simplexes.size(); j++) {
+                new_simplexes.push_back(divided_simplexes[j]);
+            };
+        };
+
+        // Update neighbours for new_simplexes: remove neighbours, who are not in partition
+        for (int i=0; i < simplexes.size(); i++) {
+            list<Simplex*> neighbours = simplexes[i]->_neighbours;
+            neighbours.erase(remove_if(neighbours.begin(), neighbours.end(), Simplex::not_in_partition), neighbours.end());
+        };
+
+        // Update neighbours for each new_simplex:  add newly created neighbours
+        return new_simplexes;
+    };
+
 
     void minimize(Function* func){
         _func = func;
@@ -423,15 +443,8 @@ public:
                 simplexes_to_divide = select_simplexes_to_divide();
             };
 
-            // Divides selected simplexes
-            vector<Simplex*> new_simplexes;
-            for (int i=0; i < simplexes_to_divide.size(); i++) {
-                vector<Simplex*> divided_simplexes = divide_simplex(simplexes_to_divide[i]);
-
-                for (int j=0; j < divided_simplexes.size(); j++) {
-                    new_simplexes.push_back(divided_simplexes[j]);
-                };
-            };
+            // Divide seletected simplexes method
+            vector<Simplex*> new_simplexes = divide_simplexes(simplexes_to_divide);
 
             // Remove partitioned simplexes from _partition
             _partition.erase(remove_if(_partition.begin(), _partition.end(), Simplex::not_in_partition), _partition.end());
