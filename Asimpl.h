@@ -345,6 +345,15 @@ public:
         vector<Simplex*> divided_simplexes;
         if (strategy== "longest_half") {
             // Find middle point
+
+            // if (_iteration == 199) {
+            //     cout << "It" << _iteration << endl;
+            //     simplex->_le_v1->print();
+            //     simplex->_le_v2->print();
+            //     simplex->print();
+            //     cout << " ---- " << endl;
+            // };
+                
             int n = _func->_D;
             double c[n];
             for (int i=0; i < n; i++) {
@@ -398,6 +407,16 @@ public:
 
             simplex->_is_in_partition = false;
 
+            //     cout << "It" << _iteration << endl;
+            //     simplex->_le_v1->print();
+            //     simplex->_le_v2->print();
+            //     simplex->print();
+            //     cout << " -- " << endl;
+            //     left_simplex->print();
+            //     right_simplex->print();
+            //     cout << " ---- " << endl;
+            // };
+
             divided_simplexes.push_back(left_simplex);
             divided_simplexes.push_back(right_simplex);
             return divided_simplexes;
@@ -422,6 +441,19 @@ public:
         };
 
         // Update neighbours for each new_simplex:  add newly created neighbours
+        list<Simplex*> neighbours;
+        for (int i=0; i < simplexes.size(); i++) {
+            neighbours = simplexes[i]->_neighbours;
+            for (int j=i+1; j < simplexes.size(); j++) {
+                if (are_neighbours(simplexes[i], simplexes[j])) {
+                    bool found = (find(neighbours.begin(), neighbours.end(), simplexes[j]) != neighbours.end());
+                    if (!found) {
+                        simplexes[i]->_neighbours.push_back(simplexes[j]);
+                        simplexes[j]->_neighbours.push_back(simplexes[i]);
+                    };
+                };
+            };
+        };
         return new_simplexes;
     };
 
@@ -443,8 +475,22 @@ public:
                 simplexes_to_divide = select_simplexes_to_divide();
             };
 
+            if (_iteration == 200) {
+                cout << "Selected simpls: " << _iteration << endl;
+                for (int i=0; i < simplexes_to_divide.size(); i++) {
+                    // simplexes_to_divide[i]->print();
+                    cout << "(" << simplexes_to_divide[i]->_diameter << ", " << simplexes_to_divide[i]->_min_lb_value<< "), ";
+                };
+                cout << endl;
+            }
+
             // Divide seletected simplexes method
             vector<Simplex*> new_simplexes = divide_simplexes(simplexes_to_divide);
+
+            if (_iteration == 200) {
+                Simplex::log_partition(_partition, simplexes_to_divide);
+                exit(0);
+            };
 
             // Remove partitioned simplexes from _partition
             _partition.erase(remove_if(_partition.begin(), _partition.end(), Simplex::not_in_partition), _partition.end());
@@ -461,7 +507,7 @@ public:
 
             // Update counters and log the status
             _iteration += 1;
-            // cout << _iteration << ". Simplexes: " << _partition.size() << "  calls: " << _func->_calls << "  f_min:" << _func->_f_min << endl;
+            cout << _iteration << ". Simplexes: " << _partition.size() << "  calls: " << _func->_calls << "  f_min:" << _func->_f_min << endl;
 
             timestamp_t end = get_timestamp();
             _duration = (end - start) / 1000000.0L;
