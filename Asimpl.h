@@ -435,21 +435,21 @@ public:
         };
 
         // Update neighbours for new_simplexes: remove neighbours, who are not in partition
-        for (int i=0; i < simplexes.size(); i++) {
-            list<Simplex*> neighbours = simplexes[i]->_neighbours;
+        for (int i=0; i < new_simplexes.size(); i++) {
+            list<Simplex*> neighbours = new_simplexes[i]->_neighbours;
             neighbours.erase(remove_if(neighbours.begin(), neighbours.end(), Simplex::not_in_partition), neighbours.end());
         };
 
         // Update neighbours for each new_simplex:  add newly created neighbours
         list<Simplex*> neighbours;
-        for (int i=0; i < simplexes.size(); i++) {
-            neighbours = simplexes[i]->_neighbours;
-            for (int j=i+1; j < simplexes.size(); j++) {
-                if (are_neighbours(simplexes[i], simplexes[j])) {
-                    bool found = (find(neighbours.begin(), neighbours.end(), simplexes[j]) != neighbours.end());
+        for (int i=0; i < new_simplexes.size(); i++) {
+            neighbours = new_simplexes[i]->_neighbours;
+            for (int j=i+1; j < new_simplexes.size(); j++) {
+                if (are_neighbours(new_simplexes[i], new_simplexes[j])) {
+                    bool found = (find(neighbours.begin(), neighbours.end(), new_simplexes[j]) != neighbours.end());
                     if (!found) {
-                        simplexes[i]->_neighbours.push_back(simplexes[j]);
-                        simplexes[j]->_neighbours.push_back(simplexes[i]);
+                        new_simplexes[i]->_neighbours.push_back(new_simplexes[j]);
+                        new_simplexes[j]->_neighbours.push_back(new_simplexes[i]);
                     };
                 };
             };
@@ -475,14 +475,14 @@ public:
                 simplexes_to_divide = select_simplexes_to_divide();
             };
 
-            if (_iteration == 200) {
-                cout << "Selected simpls: " << _iteration << endl;
-                for (int i=0; i < simplexes_to_divide.size(); i++) {
-                    // simplexes_to_divide[i]->print();
-                    cout << "(" << simplexes_to_divide[i]->_diameter << ", " << simplexes_to_divide[i]->_min_lb_value<< "), ";
-                };
-                cout << endl;
-            }
+            // if (_iteration == 200) {
+            //     cout << "Selected simpls: " << _iteration << endl;
+            //     for (int i=0; i < simplexes_to_divide.size(); i++) {
+            //         // simplexes_to_divide[i]->print();
+            //         cout << "(" << simplexes_to_divide[i]->_diameter << ", " << simplexes_to_divide[i]->_min_lb_value<< "), ";
+            //     };
+            //     cout << endl;
+            // }
 
             // Divide seletected simplexes method
             vector<Simplex*> new_simplexes = divide_simplexes(simplexes_to_divide);
