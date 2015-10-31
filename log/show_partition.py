@@ -186,7 +186,7 @@ if __name__ == '__main__':
     if len(sys.argv) == 3:
         indexes, lines = show_diff_indexes(sys.argv[1], sys.argv[2])
         print(indexes)
-        print('No match for these lines in ' + sys.argv[2])
+        print('No match for these lines in ' + sys.argv[1])
         for line in lines:
             print(line.strip())
     elif len(sys.argv) == 2:
