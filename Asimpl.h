@@ -16,6 +16,8 @@
 
 using namespace std;
 
+// Continuous covverage of inner problem: divide all simplexes, use 100 point evaluations.
+
 // Note: parent simplexes could be deleted and not tracked for efficiency.
 // Note: _partition should be sorted globally by ascending _diameter (resorting/sorted_insertion would take less time)
 // Note: functions should not use global variables: should get and return values
@@ -487,10 +489,10 @@ public:
             // Divide seletected simplexes method
             vector<Simplex*> new_simplexes = divide_simplexes(simplexes_to_divide);
 
-            if (_iteration == 200) {
-                Simplex::log_partition(_partition, simplexes_to_divide);
-                exit(0);
-            };
+            // if (_iteration == 200) {
+            //     Simplex::log_partition(_partition, simplexes_to_divide);
+            //     exit(0);
+            // };
 
             // Remove partitioned simplexes from _partition
             _partition.erase(remove_if(_partition.begin(), _partition.end(), Simplex::not_in_partition), _partition.end());

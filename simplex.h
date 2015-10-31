@@ -3,6 +3,7 @@
 /* Simplex is a simplex used for solving main problem, e.g. minimizing GKLS function */
 #include "Eigen/Dense"
 #include "Elbme.h"
+#include "Conte.h"
 #include <list>         // std::list
 
 using namespace std;
@@ -139,7 +140,32 @@ public:
 
     // Need a scenario where a single simplex is created and I can test with it  
     Point* find_accurate_lb_min_estimate(vector<Point*> verts, double L) {
-        Elbme* alg = new Elbme(verts, L);
+        // if ((verts[0]->_X[0] == 0.375) &&
+        //     (verts[0]->_X[1] == 0.625) &&
+        //     (verts[0]->_X[2] == 0.625) &&
+        //     (verts[0]->_X[3] == 0.875) &&
+        //     (verts[1]->_X[0] == 0.25) &&
+        //     (verts[1]->_X[1] == 0.75) &&
+        //     (verts[1]->_X[2] == 0.75) &&
+        //     (verts[1]->_X[3] == 0.75) &&
+        //     (verts[2]->_X[0] == 0.5625) &&
+        //     (verts[2]->_X[1] == 0.6875) &&
+        //     (verts[2]->_X[2] == 0.6875) &&
+        //     (verts[2]->_X[3] == 0.9375) &&
+        //     (verts[3]->_X[0] == 0.5) &&
+        //     (verts[3]->_X[1] == 0.75) &&
+        //     (verts[3]->_X[2] == 0.75) &&
+        //     (verts[3]->_X[3] == 1.) &&
+        //     (verts[4]->_X[0] == 0.5) &&
+        //     (verts[4]->_X[1] == 1.) &&
+        //     (verts[4]->_X[2] == 0.5) &&
+        //     (verts[4]->_X[3] == 1.)) {
+        //     cout << "Found and L is: " << L << endl;
+        // }
+
+        // Elbme* alg = new Elbme(verts, L);
+        Conte* alg = new Conte(verts, L);
+
         Point* estimate_of_accurate_lb_min = alg->minimize()->copy();
         delete alg;
         // cout << "Found estimate: " << estimate_of_accurate_lb_min->_values[0] << endl;
@@ -280,7 +306,7 @@ public:
     };
 
     void print(){
-        cout << " Simplex  (" << _diameter << ", " << _min_vert_value << "):" << endl;
+        cout << " Simplex  (" << _diameter << ", " << _min_lb_value << "):" << endl;
         for (int i=0; i < _verts.size(); i++){
             _verts[i]->print();
         };
@@ -621,6 +647,33 @@ void Simplex::update_estimates(vector<Simplex*> simpls, Function* func) {   // N
             //     };
             // };
             simpls[sid]->_L = _max_grad_norm;
+
+            // if ((simpls[sid]->_verts[0]->_X[0] == 0.375) &&
+            //     (simpls[sid]->_verts[0]->_X[1] == 0.625) &&
+            //     (simpls[sid]->_verts[0]->_X[2] == 0.625) &&
+            //     (simpls[sid]->_verts[0]->_X[3] == 0.875) &&
+            //     (simpls[sid]->_verts[1]->_X[0] == 0.25) &&
+            //     (simpls[sid]->_verts[1]->_X[1] == 0.75) &&
+            //     (simpls[sid]->_verts[1]->_X[2] == 0.75) &&
+            //     (simpls[sid]->_verts[1]->_X[3] == 0.75) &&
+            //     (simpls[sid]->_verts[2]->_X[0] == 0.5625) &&
+            //     (simpls[sid]->_verts[2]->_X[1] == 0.6875) &&
+            //     (simpls[sid]->_verts[2]->_X[2] == 0.6875) &&
+            //     (simpls[sid]->_verts[2]->_X[3] == 0.9375) &&
+            //     (simpls[sid]->_verts[3]->_X[0] == 0.5) &&
+            //     (simpls[sid]->_verts[3]->_X[1] == 0.75) &&
+            //     (simpls[sid]->_verts[3]->_X[2] == 0.75) &&
+            //     (simpls[sid]->_verts[3]->_X[3] == 1.) &&
+            //     (simpls[sid]->_verts[4]->_X[0] == 0.5) &&
+            //     (simpls[sid]->_verts[4]->_X[1] == 1.) &&
+            //     (simpls[sid]->_verts[4]->_X[2] == 0.5) &&
+            //     (simpls[sid]->_verts[4]->_X[3] == 1.)) {
+            //     cout << "Found _max_grad_norm: " << _max_grad_norm << endl;;
+            //     cout << "Grad norm set:" << endl;
+            //     for (list<Simplex*>::iterator it=simpls[sid]->_neighbours.begin(); it != simpls[sid]->_neighbours.end(); ++it) {
+            //             cout << (*it)->_grad_norm << ", "; 
+            //     };
+            // }
 
             // [B strategy: 1-same-vert]
             // region = new SimplexTree();
