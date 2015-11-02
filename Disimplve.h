@@ -1,5 +1,5 @@
-#ifndef MINVERTE_H
-#define MINVERTE_H 
+#ifndef DISIMPLVE_H
+#define DISIMPLVE_H 
 /* Minverte algorithm purpose is to solve ASIMPL inner optimization problem, which
  * is to optimize simplex's lower bound by dividing it into subsimplexes. */
 /* MIN VERTex lower bound minimum Estimate ~ MINVERTE */  
@@ -19,11 +19,11 @@
 
 using namespace std;
 
-class Minverte {   // For efficiency do not store links to parents
-    Minverte(const Minverte& other) {};
-    Minverte& operator=(const Minverte& other) {};
+class Disimplve {   // For efficiency do not store links to parents
+    Disimplve(const Disimplve& other) {};
+    Disimplve& operator=(const Disimplve& other) {};
 public:
-    Minverte(vector<Point*> verts, double L) {
+    Disimplve(vector<Point*> verts, double L) {
         _verts = verts;
         sort(_verts.begin(), _verts.end(), Point::compare_by_value);     // When several longest edges exist: randomness? // Note: Should sorting be done descending?
         _L = L;
@@ -127,7 +127,7 @@ public:
         // return point with lowest value
 
         // Why do I get improvement? Accurate lower bound. Accurate Lipschitz constant.
-        //      What's the purpose of minverte then? There is no purpose, I
+        //      What's the purpose of Disimplve then? There is no purpose, I
         //      for comparison purposes only.
 
 
@@ -170,7 +170,7 @@ public:
         // return _partition[0]->_min_vert;
     };
 
-    virtual ~Minverte() {
+    virtual ~Disimplve() {
         for (int i=0; i < _points.size(); i++) {
             delete _points[i];
         };

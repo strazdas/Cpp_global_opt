@@ -4,7 +4,7 @@
 #include "Eigen/Dense"
 #include "Elbme.h"
 #include "Conte.h"
-#include "Minverte.h"
+#include "Disimplve.h"
 #include <list>         // std::list
 
 using namespace std;
@@ -166,7 +166,7 @@ public:
 
         // Elbme* alg = new Elbme(verts, L);
         // Conte* alg = new Conte(verts, L);
-        Minverte* alg = new Minverte(verts, L);
+        Disimplve* alg = new Disimplve(verts, L);
 
         Point* estimate_of_accurate_lb_min = alg->minimize()->copy();
         delete alg;
