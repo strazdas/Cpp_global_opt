@@ -122,17 +122,12 @@ public:
 
 
     Point* minimize() {     // Returns estimated simplex_lb_min_value
-        // sort vertexes based on value
-        return _verts[0];
-        // return point with lowest value
-
-        // Why do I get improvement? Accurate lower bound. Accurate Lipschitz constant.
-        //      What's the purpose of minverte then? There is no purpose, I
-        //      for comparison purposes only.
-
+        // Warrning: unimplemented
+        // Minverte idea is: to have several subsimplexes groups by number of subsimplex divisions
+        // In each iteration divide one best simplex from each group (if value match, divide them bouth)
+        // Best subsimplexes from each group can be found by itearting through all simplexes and comparing values.
 
         // double tolerance = _partition[0]->_tolerance;
-        //
         // int iter = 0;
         // // while (tolerance > _accuracy) {
         // while (_max_iter > iter) {
@@ -163,7 +158,7 @@ public:
         //     // sort partition by min lb value 
         //     sort(_partition.begin(), _partition.end(), Subsimplex::compare_by_min_lb_value);
         //
-        //     tolerance = _partition[0]->_tolerance;
+        //     // tolerance = _partition[0]->_tolerance;
         //     iter += 1;
         //     // cout << it << ". tol " << tolerance << " acc " << _accuracy << " estimate " << _partition[0]->_min_vert_value << " min_lb " << _partition[0]->_min_lb_value << " diameter " << _partition[0]->_diameter << endl;
         // };
