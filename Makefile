@@ -39,6 +39,6 @@ mem_check:  compile_asimpl
 	valgrind --tool=memcheck --leak-check=full -v ./main.out
 
 profiler:  compile_asimpl
-	valgrind --tool=callgrind ./asimpl.out
-	# git clone https://github.com/jrfonseca/gprof2dot
-	./gprof2dot/gprof2dot.py -f callgrind callgrind.out.X | dot -Tsvg -o profile.svg
+	valgrind --tool=callgrind ./asimpl.out --gkls_cls=1 --gkls_fid=1
+	# git clone https://github.com/jrfonseca/gprof2dot bin/gprof2dot
+	./bin/gprof2dot/gprof2dot.py -f callgrind callgrind.out.* | dot -Tsvg -o profile.svg
