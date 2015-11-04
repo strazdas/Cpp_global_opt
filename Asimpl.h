@@ -37,7 +37,7 @@ public:
     Asimpl(double epsilon=0.0001, int max_calls=15000, double max_duration=3600) {
         _lower_bound_strategy = LowestEdgeLB;    // Lowest edge is determined by optimising
         _L_strategy = Neighbours;                // Simplex region to get max L from 
-        _max_diff_verts_to_be_neighbour = 2;     // Max number of different verts to still be a neighbour
+        _max_diff_verts_to_be_neighbour = 1;     // Max number of different verts to still be a neighbour
         _division_strategy = LongestHalf;        // Simplex division strategy - longest into two parts
         _simplex_gradient_strategy = FFMinVert;  // Single simplex L determination strategy (grad norm) 
         _stop_criteria = "x_dist_Serg";          // Stopping criteria
