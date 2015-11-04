@@ -319,12 +319,13 @@ public:
         };
     };
 
-    static void log_partition(vector<Simplex*> simplexes,
-                              vector<Simplex*> selected,
-                              string label="Partition:",
-                              int iteration=0) {
+    static void log_partition(vector<Simplex*> simplexes, vector<Simplex*> selected, string label="Partition:", int iteration=0, bool clean_file) {
        ofstream log_file; 
-       log_file.open("log/partition.txt", ios::app);
+       if (clean_file) {
+           log_file.open("log/partition.txt");
+           log_file.close();
+       };
+       log_file.open("log/partition.txt", ios::app);   // Append to file
        log_file << label << iteration << ":" << endl;
        for (int i=0; i < simplexes.size(); i++) {
            for (int j=0; j < simplexes[i]->_verts.size(); j++) {

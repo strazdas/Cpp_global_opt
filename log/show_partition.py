@@ -5,7 +5,7 @@ from itertools import permutations
 from mpl_toolkits.mplot3d import axes3d
 
 
-def show_partition(filename='partition.txt'):
+def show_partition(filename='partition.txt', ax=[1, 2]):
     from matplotlib import pyplot as plt
     draw_from_iteration = 1
     iteration = 0
@@ -32,7 +32,7 @@ def show_partition(filename='partition.txt'):
         if line == '\n':
             selected_mode = False
             if simplexes and iteration >= draw_from_iteration:
-                show_potential(simplexes, selected, title=title)
+                show_potential(simplexes, selected, title=title, ax=ax)
             simplexes = []
             selected = []
             continue
@@ -54,7 +54,7 @@ def show_partition(filename='partition.txt'):
             if simplex:
                 add_to.append(simplex)
 
-    show_potential(simplexes, selected, title=title)
+    show_potential(simplexes, selected, title=title, ax=ax)
 
 
 def l2norm(a1, a2):
@@ -64,7 +64,7 @@ def l2norm(a1, a2):
     return sqrt(sum([e**2 for e in (a(a1)-a(a2))]))
 
 
-def show_potential(simplexes, selected=[], show=True, title=''):
+def show_potential(simplexes, selected=[], show=True, title='', ax=[1,2]):
     from matplotlib import pyplot as plt
     ## Draw two plots
     # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12,6), projection='3d')
@@ -77,58 +77,60 @@ def show_potential(simplexes, selected=[], show=True, title=''):
     ax2 = fig.add_subplot(122)
     fig.suptitle(title)
 
-    for simplex in simplexes:
-        ax2.plot([simplex[-1]['size']], [simplex[-1]['value']], 'bo')
-    for simplex in selected:
-        ax2.plot([simplex[-1]['size']], [simplex[-1]['value']], 'ro')
-    for i in range(len(selected[:-1])):
-        ax2.plot([selected[i][-1]['size'], selected[i+1][-1]['size']],
-                 [selected[i][-1]['value'], selected[i+1][-1]['value']], 'r-')
-    ax2.set_ylabel('Function values on simplices vertices')
-    ax2.set_xlabel('Simplices diameter')
+    if 2 in ax:
+        for simplex in simplexes:
+            ax2.plot([simplex[-1]['size']], [simplex[-1]['value']], 'bo')
+        for simplex in selected:
+            ax2.plot([simplex[-1]['size']], [simplex[-1]['value']], 'ro')
+        for i in range(len(selected[:-1])):
+            ax2.plot([selected[i][-1]['size'], selected[i+1][-1]['size']],
+                     [selected[i][-1]['value'], selected[i+1][-1]['value']], 'r-')
+        ax2.set_ylabel('Function values on simplices vertices')
+        ax2.set_xlabel('Simplices diameter')
 
-    for simplex in simplexes:
-        s = simplex[:-1]
-        for j in range(len(s)):
+    if 1 in ax:
+        for simplex in simplexes:
+            s = simplex[:-1]
+            for j in range(len(s)):
+                if len(s) == 3:
+                    ax1.plot([s[j-1][0], s[j][0]], [s[j-1][1], s[j][1]], 'b-')
+                else:
+                    # should use permutations here
+                    ax1.plot([s[j-1][0], s[j][0]], [s[j-1][1], s[j][1]], [s[j-1][2], s[j][2]], 'b-')
+
+        for simplex in selected:
+            s = sort_vertexes_longest_edge_first(simplex)[:-1]
+            for i, j in permutations(range(len(s)), 2):
+                if len(s) == 3:
+                    ax1.plot([s[i][0], s[j][0]], [s[i][1], s[j][1]], 'r-', linewidth=2)
+                else:
+                    # should use permutations here
+                    ax1.plot([s[i][0], s[j][0]], [s[i][1], s[j][1]], [s[i][2], s[j][2]], 'r-', linewidth=2)
+
+            edge_lengths = []   # [(vertex_index, vertex_index, edge_length),]
+            for i, j in permutations(range(len(s)), 2):
+                if j > i:
+                    edge_lengths.append((i, j, l2norm(s[i][:-1], s[j][:-1])))
+            le_i, le_j, le_length = max(edge_lengths, key=lambda x: x[-1])
+
             if len(s) == 3:
-                ax1.plot([s[j-1][0], s[j][0]], [s[j-1][1], s[j][1]], 'b-')
+                division_point = [(s[le_i][0]+s[le_j][0])/2., (s[le_i][1]+s[le_j][1])/2.]
+                ax1.plot([division_point[0]], [division_point[1]], 'ro')
+                ax1.plot([division_point[0], s[2][0]], [division_point[1], s[2][1]], 'r--')
             else:
-                # should use permutations here
-                ax1.plot([s[j-1][0], s[j][0]], [s[j-1][1], s[j][1]], [s[j-1][2], s[j][2]], 'b-')
+                division_point = [(s[le_i][0] + s[le_j][0])/2., (s[le_i][1] + s[le_j][1])/2., (s[le_i][2] + s[le_j][2])/2.]
+                ax1.plot([division_point[0]], [division_point[1]], [division_point[2]], 'ro')
+                for i in range(len(s)):
+                    if i != le_j and i != le_i:
+                        ax1.plot([division_point[0], s[i][0]], [division_point[1], s[i][1]], [division_point[2], s[i][2]], 'r--')
+                    # ax1.plot([division_point[0], s[3][0]], [division_point[1], s[3][1]], [division_point[2], s[3][2]], 'r--')
 
-    for simplex in selected:
-        s = sort_vertexes_longest_edge_first(simplex)[:-1]
-        for i, j in permutations(range(len(s)), 2):
-            if len(s) == 3:
-                ax1.plot([s[i][0], s[j][0]], [s[i][1], s[j][1]], 'r-', linewidth=2)
-            else:
-                # should use permutations here
-                ax1.plot([s[i][0], s[j][0]], [s[i][1], s[j][1]], [s[i][2], s[j][2]], 'r-', linewidth=2)
-
-        edge_lengths = []   # [(vertex_index, vertex_index, edge_length),]
-        for i, j in permutations(range(len(s)), 2):
-            if j > i:
-                edge_lengths.append((i, j, l2norm(s[i][:-1], s[j][:-1])))
-        le_i, le_j, le_length = max(edge_lengths, key=lambda x: x[-1])
-
-        if len(s) == 3:
-            division_point = [(s[le_i][0]+s[le_j][0])/2., (s[le_i][1]+s[le_j][1])/2.]
-            ax1.plot([division_point[0]], [division_point[1]], 'ro')
-            ax1.plot([division_point[0], s[2][0]], [division_point[1], s[2][1]], 'r--')
-        else:
-            division_point = [(s[le_i][0] + s[le_j][0])/2., (s[le_i][1] + s[le_j][1])/2., (s[le_i][2] + s[le_j][2])/2.]
-            ax1.plot([division_point[0]], [division_point[1]], [division_point[2]], 'ro')
-            for i in range(len(s)):
-                if i != le_j and i != le_i:
-                    ax1.plot([division_point[0], s[i][0]], [division_point[1], s[i][1]], [division_point[2], s[i][2]], 'r--')
-                # ax1.plot([division_point[0], s[3][0]], [division_point[1], s[3][1]], [division_point[2], s[3][2]], 'r--')
-
-    for simplex in simplexes:
-        for j in range(len(s)):
-            if len(s) == 3:
-                ax1.plot([simplex[j][0]], [simplex[j][1]], 'bo')
-            else:
-                ax1.plot([simplex[j][0]], [simplex[j][1]], [simplex[j][2]], 'bo')
+        for simplex in simplexes:
+            for j in range(len(s)):
+                if len(s) == 3:
+                    ax1.plot([simplex[j][0]], [simplex[j][1]], 'bo')
+                else:
+                    ax1.plot([simplex[j][0]], [simplex[j][1]], [simplex[j][2]], 'bo')
 
     # ax2.axis([min([simplexes]) -0.05, 1.05, -0.05, 1.05])
     max_size = max([s[-1]['size'] for s in simplexes])
@@ -190,6 +192,6 @@ if __name__ == '__main__':
         for line in lines:
             print(line.strip())
     elif len(sys.argv) == 2:
-        show_partition(sys.argv[1])
+        show_partition(sys.argv[1], ax=[2])
     else:
-        show_partition()
+        show_partition(ax=[2])

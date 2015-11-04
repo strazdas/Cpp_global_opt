@@ -495,10 +495,10 @@ public:
             // Divide seletected simplexes method
             vector<Simplex*> new_simplexes = divide_simplexes(simplexes_to_divide);
 
-            // if (_iteration == 9) {
-            //     Simplex::log_partition(_partition, simplexes_to_divide);
-            //     exit(0);
-            // };
+            //// Draw partition in each iteration:
+            // Simplex::log_partition(_partition, simplexes_to_divide, clean_file=true);
+            // FILE* test = popen("python log/show_partition.py log/partition.txt", "r");
+            // pclose(test);
 
             // Remove partitioned simplexes from _partition
             _partition.erase(remove_if(_partition.begin(), _partition.end(), Simplex::not_in_partition), _partition.end());
