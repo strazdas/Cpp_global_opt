@@ -319,7 +319,7 @@ public:
         };
     };
 
-    static void log_partition(vector<Simplex*> simplexes, vector<Simplex*> selected, string label="Partition:", int iteration=0, bool clean_file) {
+    static void log_partition(vector<Simplex*> simplexes, vector<Simplex*> selected, string label="Partition:", int iteration=0, bool clean_file=false) {
        ofstream log_file; 
        if (clean_file) {
            log_file.open("log/partition.txt");
