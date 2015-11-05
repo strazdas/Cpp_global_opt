@@ -324,8 +324,13 @@ public:
     static void log_partition(vector<Simplex*> simplexes,
                               vector<Simplex*> selected,
                               string label="Partition:",
-                              int iteration=0) {
+                              int iteration=0, bool clean_file=true) {
        ofstream log_file; 
+       if (clean_file) {
+           log_file.open("log/partition.txt");
+           log_file.close();
+       };
+
        log_file.open("log/partition.txt", ios::app);
        log_file << label << iteration << ":" << endl;
        for (int i=0; i < simplexes.size(); i++) {
@@ -700,7 +705,7 @@ void Simplex::update_estimates(vector<Simplex*> simpls, Function* func) {   // N
             if (simpls[sid]->_min_lb != 0) {  // Free allocated memory
                 delete simpls[sid]->_min_lb;
             };
-            simpls[sid]->_min_lb = simpls[sid]->find_accurate_lb_min_estimate(simpls[sid]->_verts, simpls[sid]->_L);
+            simpls[sid]->_min_lb = simpls[sid]->find_accurate_lb_min_estimate(simpls[sid]->_verts, 0);
             simpls[sid]->_min_lb_value = simpls[sid]->_min_lb->_values[0];
     
             simpls[sid]->_metric__vert_min_value = (simpls[sid]->_min_vert_value - (func->_glob_f + E)) / simpls[sid]->_diameter;

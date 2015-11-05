@@ -503,6 +503,11 @@ public:
             //     Simplex::log_partition(_partition, simplexes_to_divide);
             //     exit(0);
             // };
+            
+            //// Draw partition in each iteration:
+            // Simplex::log_partition(_partition, simplexes_to_divide);
+            // FILE* test = popen("python log/show_partition.py log/partition.txt", "r");
+            // pclose(test);
 
             // Remove partitioned simplexes from _partition
             _partition.erase(remove_if(_partition.begin(), _partition.end(), Simplex::not_in_partition), _partition.end());

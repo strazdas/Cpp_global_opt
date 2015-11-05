@@ -25,7 +25,6 @@ class Minverte {   // For efficiency do not store links to parents
 public:
     Minverte(vector<Point*> verts, double L) {
         _verts = verts;
-        sort(_verts.begin(), _verts.end(), Point::compare_by_value);     // When several longest edges exist: randomness? // Note: Should sorting be done descending?
         _L = L;
         _D = _verts.size() - 1;
         _partition.push_back(new Subsimplex(_verts, _L));
@@ -122,7 +121,7 @@ public:
 
 
     Point* minimize() {     // Returns estimated simplex_lb_min_value
-        // Warrning: unimplemented
+        // Warrning: unimplemented (warning: old idea, minverte now is simply min vert)
         // Minverte idea is: to have several subsimplexes groups by number of subsimplex divisions
         // In each iteration divide one best simplex from each group (if value match, divide them bouth)
         // Best subsimplexes from each group can be found by itearting through all simplexes and comparing values.
@@ -162,17 +161,19 @@ public:
         //     iter += 1;
         //     // cout << it << ". tol " << tolerance << " acc " << _accuracy << " estimate " << _partition[0]->_min_vert_value << " min_lb " << _partition[0]->_min_lb_value << " diameter " << _partition[0]->_diameter << endl;
         // };
-        // return _partition[0]->_min_vert;
+
+        sort(_verts.begin(), _verts.end(), Point::compare_by_value);
+        return _verts[0];
     };
 
     virtual ~Minverte() {
-        for (int i=0; i < _points.size(); i++) {
-            delete _points[i];
-        };
-        _points.clear();
-        for (int i=0; i < _partition.size(); i++) {
-            delete _partition[i];
-        };
+        // for (int i=0; i < _points.size(); i++) {
+        //     delete _points[i];
+        // };
+        // _points.clear();
+        // for (int i=0; i < _partition.size(); i++) {
+        //     delete _partition[i];
+        // };
         _partition.clear();
     };
 };
