@@ -496,7 +496,7 @@ public:
             vector<Simplex*> new_simplexes = divide_simplexes(simplexes_to_divide);
 
             //// Draw partition in each iteration:
-            // Simplex::log_partition(_partition, simplexes_to_divide, clean_file=true);
+            // Simplex::log_partition(_partition, simplexes_to_divide);
             // FILE* test = popen("python log/show_partition.py log/partition.txt", "r");
             // pclose(test);
 
