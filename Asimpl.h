@@ -243,8 +243,14 @@ public:
         bool unique_diameter;
         bool found_with_same_size;
         for (int i=0; i < sorted_partition.size(); i++) {
-            if (sorted_partition[i]->_metric__min_lb < min_metric_simplex->_metric__min_lb) {
-                min_metric_simplex = sorted_partition[i];
+            if (sorted_partition[i]->_min_lb_value <= min_metric_simplex->_min_lb_value) {
+                if (sorted_partition[i]->_min_lb_value == min_metric_simplex->_min_lb_value) {
+                    if (sorted_partition[i]->_diameter < min_metric_simplex->_diameter) {
+                        min_metric_simplex = sorted_partition[i];
+                    };
+                } else {
+                    min_metric_simplex = sorted_partition[i];
+                };
             };
             // Saves unique diameters
             unique_diameter = true;
@@ -275,27 +281,31 @@ public:
 
         vector<Simplex*> selected;
         // Is this OK?  Well compared with examples - its ok.
-        if ((best_for_size.size() > 2) ) { // && (min_metric_simplex != best_for_size[best_for_size.size()-1])
-            vector<Simplex*> simplexes_below_line;
-            double a1 = best_for_size[0]->_diameter;
-            double b1 = best_for_size[0]->_min_lb_value;
-            // double a1 = min_metric_simplex->_diameter;  // Should be like this based on Direct Matlab implementation
-            // double b1 = min_metric_simplex->_min_lb_value;
-            double a2 = best_for_size[best_for_size.size()-1]->_diameter;
-            double b2 = best_for_size[best_for_size.size()-1]->_min_lb_value;
-
-            double slope = (b2 - b1)/(a2 - a1);
-            double bias = b1 - slope * a1;
-
-            for (int i=0; i < best_for_size.size(); i++) {
-                if (best_for_size[i]->_min_lb_value < slope*best_for_size[i]->_diameter + bias +1e-12) {
-                    simplexes_below_line.push_back(best_for_size[i]);
-                };
-            };
-            selected = convex_hull(simplexes_below_line);  // Messes up simplexes_below_line
+        if (min_metric_simplex == best_for_size[best_for_size.size()-1]) {
+            selected.push_back(min_metric_simplex);
         } else {
-            selected = best_for_size;    // TODO: Why we divide all of them? Could divide only min_metrc_simplex.
-                                         // Because practiacally this case does not occur ever.
+            if ((best_for_size.size() > 2) ) { // && (min_metric_simplex != best_for_size[best_for_size.size()-1])
+                vector<Simplex*> simplexes_below_line;
+                // double a1 = best_for_size[0]->_diameter;
+                // double b1 = best_for_size[0]->_min_lb_value;
+                double a1 = min_metric_simplex->_diameter;  // Should be like this based on Direct Matlab implementation
+                double b1 = min_metric_simplex->_min_lb_value;
+                double a2 = best_for_size[best_for_size.size()-1]->_diameter;
+                double b2 = best_for_size[best_for_size.size()-1]->_min_lb_value;
+
+                double slope = (b2 - b1)/(a2 - a1);
+                double bias = b1 - slope * a1;
+
+                for (int i=0; i < best_for_size.size(); i++) {
+                    if (best_for_size[i]->_min_lb_value < slope*best_for_size[i]->_diameter + bias +1e-12) {
+                        simplexes_below_line.push_back(best_for_size[i]);
+                    };
+                };
+                selected = convex_hull(simplexes_below_line);  // Messes up simplexes_below_line
+            } else {
+                selected = best_for_size;    // TODO: Why we divide all of them? Could divide only min_metrc_simplex.
+                                             // Because practiacally this case does not occur ever.
+            };
         };
 
 
