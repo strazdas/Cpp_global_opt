@@ -1,13 +1,13 @@
-do: compile_asimpl
+do: compile
 
-compile_asimpl:
+compile:
 	@echo "==================================================================================="
 	g++ gkls.c rnd_gen.c Asimpl_main.cpp -o asimpl.out
 	# g++ -std=c++11 gkls.c rnd_gen.c Asimpl_main.cpp -o asimpl.out
 
-run_asimpl: compile_asimpl
+run: compile
 	clear
-	./asimpl.out --gkls_cls=5 --gkls_fid=84
+	./asimpl.out --gkls_cls=2 --gkls_fid=84
 	
 
 test:

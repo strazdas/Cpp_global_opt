@@ -163,8 +163,8 @@ public:
         //     cout << "Found and L is: " << L << endl;
         // }
 
-        // Elbme* alg = new Elbme(verts, L);
-        Conte* alg = new Conte(verts, L);
+        Elbme* alg = new Elbme(verts, L);
+        // Conte* alg = new Conte(verts, L);
 
         Point* estimate_of_accurate_lb_min = alg->minimize()->copy();
         delete alg;
