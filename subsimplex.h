@@ -109,7 +109,7 @@ public:
         _max_vert_value = _max_vert->_values[0];
 
         // Find longest edge lower bound
-        _min_lb_value = find_simplex_lb_min_value_estimate(_le_v1, _le_v2, _L);
+        _min_lb_value = find_simplex_lb_min_value_estimate(_le_v1, _le_v2, _L, _diameter);
         // cout << "_min_vert_value is " << _min_vert_value << endl;
         // if (_min_vert_value == 2.22507e-308) {
         //     cout << "_min_vert_value is: " << _min_vert_value << endl;
@@ -121,11 +121,21 @@ public:
         // cout << "Calculated tolerance " << _tolerance << " _min_lb_value " << _min_lb_value << endl;
     };
 
-    double find_simplex_lb_min_value_estimate(Point* _le_v1, Point* _le_v2, double _L) {
+    double find_simplex_lb_min_value_estimate(Point* _le_v1, Point* _le_v2, double _L, double _diameter) {
         /* This is A.Ž. simplex lower bound estimation algorithm Elleme, which do not
          * garantee tolerance strict decrease */
         /* Elleme: Efficient Lower Longest Edge bound Minimum Estimation */
-        return (_le_v1->_values[0] + _le_v2->_values[0]) / 2 - _L * (l2norm(_le_v1, _le_v2)) / sqrt(2);
+
+        /* Error: was done here: all experiments using Elbme are not valid */ 
+        // double x = (_le_v1->_values[0] + _le_v2->_values[0]) / 2 - _L * (l2norm(_le_v1, _le_v2)) / sqrt(2);
+        
+        // Use the bulk estimate
+        double v1 = _le_v1->_values[0] - _L*_diameter;
+        double v2 = _le_v2->_values[0] - _L*_diameter;
+        if (v2 > v1){
+            return v2;
+        };
+        return v1;
     };
 
     // double find_edge_lb_min_value(Point* _le_v1, Point* _le_v2, double _L) {
