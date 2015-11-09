@@ -29,7 +29,7 @@ public:
         _D = _verts.size() - 1;
         _partition.push_back(new Subsimplex(_verts, _L));
         _accuracy = 1e-1;    // should be proportional to problem dimension
-        _max_iter = 100;
+        _max_iter = 10;
     };
     vector<Point*> _verts;   // Simplex vertexes used for initialization
     double _L;
