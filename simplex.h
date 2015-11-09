@@ -324,6 +324,8 @@ public:
                               string label="Partition:",
                               int iteration=0) {
        ofstream log_file; 
+       log_file.open("log/partition.txt");
+       log_file.close();
        log_file.open("log/partition.txt", ios::app);
        log_file << label << iteration << ":" << endl;
        for (int i=0; i < simplexes.size(); i++) {
