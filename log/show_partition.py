@@ -1,3 +1,4 @@
+# coding: utf-8
 # should construct simplexes and call show potential function
 import sys
 from numpy import array as a, matrix as m, arange, sqrt, isnan, pi, cos, sin, mean
@@ -19,7 +20,8 @@ def show_partition(filename='partition.txt'):
         if 'Iteration' in line or 'Partition' in line:
             # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12,6))
             # ax1.axis([-0.05, 1.05, -0.05, 1.05])
-            title = line
+            # ax2.axis([-0.05, 1.05, -0.05, 1.05])
+            # title = line
             iteration = int(line.strip().strip('Iteration:').strip('Partition:').strip())
             continue
         if 'Selected' in line:
@@ -84,8 +86,10 @@ def show_potential(simplexes, selected=[], show=True, title=''):
     for i in range(len(selected[:-1])):
         ax2.plot([selected[i][-1]['size'], selected[i+1][-1]['size']],
                  [selected[i][-1]['value'], selected[i+1][-1]['value']], 'r-')
-    ax2.set_ylabel('Function values on simplices vertices')
-    ax2.set_xlabel('Simplices diameter')
+    ax2.set_ylabel(u'Mažiausios funkcijos reikšm$\.{e}$s simplekse $\k{i}$vertis')
+    ax2.set_xlabel('Simplekso diametras')
+    ax1.set_ylabel('X2')
+    ax1.set_xlabel('X1')
 
     for simplex in simplexes:
         s = simplex[:-1]
@@ -132,8 +136,8 @@ def show_potential(simplexes, selected=[], show=True, title=''):
 
     # ax2.axis([min([simplexes]) -0.05, 1.05, -0.05, 1.05])
     max_size = max([s[-1]['size'] for s in simplexes])
-    # ax2.set_xlim([-0.05, max_size + 0.05])
-    # ax1.axis([-0.05, 1.05, -0.05, 1.05])
+    ax2.set_xlim([-0.05, max_size + 0.05])
+    ax1.axis([-0.05, 1.05, -0.05, 1.05])
     if show:
         plt.show()
     return ax1, ax2
