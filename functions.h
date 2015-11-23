@@ -629,6 +629,8 @@ public:
         stringstream function_name; 
         function_name << cls << "_" << function_id;  
         _name =  function_name.str();
+        _cls = cls;
+        _fid = function_id;
 
         cls -= 1;
         _D = _GKLS_class_D[cls];
@@ -668,14 +670,18 @@ public:
         };
     };
 
+    int _fid;
+    int _cls;
     double _global_dist;
     double _global_radius;
+
 
     double transform(Point* point, int i) {     // Transforms single point coordinate from [0,1] to [l,u]
         return point->_X[i] * (_ub->_X[i]-_lb->_X[i]) + _lb->_X[i];  
     };
 
     double value(Point* point) {
+        assert(GKLS_arg_generate(_fid) == GKLS_OK);   // Needed for multicriteria problems. Slows down function evaluations.
         double transformed_point[_D];
         for (int i=0; i<_D; i++){
             transformed_point[i] = transform(point,i);
