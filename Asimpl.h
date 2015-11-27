@@ -39,7 +39,7 @@ public:
         _L_strategy = Neighbours;                // Simplex region to get max L from 
         _max_diff_verts_to_be_neighbour = 2;     // Max number of different verts to still be a neighbour
         _division_strategy = LongestHalf;        // Simplex division strategy - longest into two parts
-        _simplex_gradient_strategy = FFMinVert;  // Single simplex L determination strategy (grad norm) 
+        _simplex_gradient_strategy = FFMaxVert;  // Single simplex L determination strategy (grad norm) 
         _stop_criteria = "x_dist_Serg";          // Stopping criteria
 
         _epsilon = epsilon;                      // Solution accuracy

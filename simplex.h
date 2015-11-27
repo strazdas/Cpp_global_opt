@@ -208,10 +208,10 @@ public:
                 };
             };
         };
-        if (simplex_gradient_strategy == FFMaxVert) {
-            throw "FFMaxVert gradient strategy not implemented yet";
-            // FFAllVertMean
-        };
+        // if (simplex_gradient_strategy == FFMaxVert) {
+        //     throw "FFMaxVert gradient strategy not implemented yet";
+        //     // FFAllVertMean
+        // };
 
         // Find gradient at lowest point
         x_diff_inv_T = x_diff.inverse().transpose();
