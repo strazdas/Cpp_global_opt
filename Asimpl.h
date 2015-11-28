@@ -12,22 +12,9 @@
 #include "utils.h"
 #include "simplex.h"
 #include "functions.h"
-#include "Disimplv.h"
+#include "algorithm.h"
 
 using namespace std;
-
-// Continuous covverage of inner problem: divide all simplexes, use 100 point evaluations.
-
-// Note: parent simplexes could be deleted and not tracked for efficiency.
-// Note: _partition should be sorted globally by ascending _diameter (resorting/sorted_insertion would take less time)
-// Note: functions should not use global variables: should get and return values
-// Note: simplex neighbours should be updated before adding simplex to _partition
-//          What kind of structure should be used? Insert and remove operations: list.
-//          How should neighbours be found in initial partitioning? Not all are neighbours
-//              After initialization should iterate through all and check how many vertexes match.
-//                  What is fastest way to find two vertex set intersection?  set_intersection: http://www.cplusplus.com/reference/algorithm/set_intersection/
-//          All checks can be done using this brute force. 
-// Note: Move code from Algorithm to Asimpl.
 
 
 class Asimpl : public Algorithm {
@@ -64,7 +51,7 @@ public:
     int _iteration;
 
     void partition_feasable_region_combinatoricly() {
-        int n = _func->_D;
+        int n = _funcs[0]->_D;
         int number_of_simpleces = 1;
         for (int i = 1; i <= n; i++) {
             number_of_simpleces *= i;
@@ -92,13 +79,19 @@ public:
             Simplex* simpl = new Simplex(_lower_bound_strategy, _L_strategy, _parent_L_part, _simplex_gradient_strategy);
             for (int i=0; i < n + 1; i++){
                 Point* tmp_point = new Point(triangle[i], n);
-                Point* point = _func->get(tmp_point); 
+                
+                Point* point = _funcs[0]->get(tmp_point); 
                 if (tmp_point != point) {
                     delete tmp_point;
+                } else {
+                    for (int j=1; j < _funcs.size(); j++) {
+                        _funcs[j]->update_meta(point);     // Note: update_meta - is not very verbose name
+                    };                                     // update would be better name
+                    update_pareto_front(point);
                 };
                 simpl->add_vertex(point);
             };
-            simpl->init_parameters(_func);
+            simpl->init_parameters(_funcs);
             _partition.push_back(simpl);
             _all_simplexes.push_back(simpl);
 
@@ -121,7 +114,14 @@ public:
             _partition[sid]->print(); 
             cout << " Simplex: ";
             cout << _partition[sid];
-            cout << "(" << _partition[sid]->_L << ")";
+            cout << "("; 
+            for (int i=0; i < _partition[sid]->_Ls.size(); i++) {
+                cout << _partition[sid]->_Ls[i];
+                if (i != _partition[sid]->_Ls.size() - 1) {
+                    cout << ",";
+                };
+            };
+            cout << ")";
             cout << "      Neighbours are:";
             cout << "(total: " << _partition[sid]->_neighbours.size() << ")";
 
@@ -160,12 +160,12 @@ public:
         return false;
     };
 
-    // LongestEdgeLB, Neighbours
-    vector<Simplex*> select_simplexes_by_lowest_edge_lb() {
-        vector<Simplex*> selected_simplexes;
-        selected_simplexes.push_back(_partition[0]);  // _partition should be sorted ascending by lb min
-        return selected_simplexes;                    
-    };
+    // LongestEdgeLB, Neighbours    // Worning: this method could be outdated, _partition could not be sorted
+    // vector<Simplex*> select_simplexes_by_lowest_edge_lb() {
+    //     vector<Simplex*> selected_simplexes;
+    //     selected_simplexes.push_back(_partition[0]);  // _partition should be sorted ascending by lb min
+    //     return selected_simplexes;                    
+    // };
 
     vector<Simplex*> convex_hull(vector<Simplex*> simplexes) {
         int m = simplexes.size() - 1;
@@ -183,12 +183,12 @@ public:
             }
             a = v;
             b = nextv(v, m);
-            c = nextv(nextv(v, m), m);   // d = x = _diameter;  f = y = _min_lb_value;
+            c = nextv(nextv(v, m), m);   // d = x = _diameter;  f = y = _tolerance;
 
             double* matrix[3];
-            double line1[3] = {simplexes[a]->_diameter, simplexes[a]->_min_lb_value, 1.};
-            double line2[3] = {simplexes[b]->_diameter, simplexes[b]->_min_lb_value, 1.};
-            double line3[3] = {simplexes[c]->_diameter, simplexes[c]->_min_lb_value, 1.};
+            double line1[3] = {simplexes[a]->_diameter, simplexes[a]->_tolerance, 1.};
+            double line2[3] = {simplexes[b]->_diameter, simplexes[b]->_tolerance, 1.};
+            double line3[3] = {simplexes[c]->_diameter, simplexes[c]->_tolerance, 1.};
             matrix[0] = line1;
             matrix[1] = line2;
             matrix[2] = line3;
@@ -233,17 +233,17 @@ public:
 
         // Simplex::print(sorted_partition, "Selecting for division from: ");
         sort(sorted_partition.begin(), sorted_partition.end(), Simplex::compare_diameter);
-        double f_min = _func->_f_min;
+        double f_min = _funcs[0]->_f_min;
 
         // Find simplex with  minimum metric  and  unique diameters
-        Simplex* min_metric_simplex = sorted_partition[0]; // Initial value
+        Simplex* min_metric_simplex = sorted_partition[0];  // Initial value
         vector<double> diameters;
         vector<Simplex*> best_for_size;
 
         bool unique_diameter;
         bool found_with_same_size;
         for (int i=0; i < sorted_partition.size(); i++) {
-            if (sorted_partition[i]->_min_lb_value < min_metric_simplex->_min_lb_value) {
+            if (sorted_partition[i]->_tolerance < min_metric_simplex->_tolerance) {
                 min_metric_simplex = sorted_partition[i];
             };
             // Saves unique diameters
@@ -262,7 +262,7 @@ public:
             for (int j=0; j < best_for_size.size(); j++) {
                 if (best_for_size[j]->_diameter == sorted_partition[i]->_diameter){
                     found_with_same_size = true;
-                    if (best_for_size[j]->_min_lb_value > sorted_partition[i]->_min_lb_value) {
+                    if (best_for_size[j]->_tolerance > sorted_partition[i]->_tolerance) {
                         best_for_size.erase(best_for_size.begin()+j);
                         best_for_size.push_back(sorted_partition[i]);
                     };
@@ -281,17 +281,17 @@ public:
             if ((best_for_size.size() > 2) && (min_metric_simplex != best_for_size[best_for_size.size()-1])) {
                 vector<Simplex*> simplexes_below_line;
                 // double a1 = best_for_size[0]->_diameter;
-                // double b1 = best_for_size[0]->_min_lb_value;
+                // double b1 = best_for_size[0]->_tolerance;
                 double a1 = min_metric_simplex->_diameter;  // Should be like this based on Direct Matlab implementation
-                double b1 = min_metric_simplex->_min_lb_value;
+                double b1 = min_metric_simplex->_tolerance;
                 double a2 = best_for_size[best_for_size.size()-1]->_diameter;
-                double b2 = best_for_size[best_for_size.size()-1]->_min_lb_value;
+                double b2 = best_for_size[best_for_size.size()-1]->_tolerance;
 
                 double slope = (b2 - b1)/(a2 - a1);
                 double bias = b1 - slope * a1;
 
                 for (int i=0; i < best_for_size.size(); i++) {
-                    if (best_for_size[i]->_min_lb_value < slope*best_for_size[i]->_diameter + bias +1e-12) {
+                    if (best_for_size[i]->_tolerance < slope*best_for_size[i]->_diameter + bias +1e-12) {
                         simplexes_below_line.push_back(best_for_size[i]);
                     };
                 };
@@ -302,33 +302,38 @@ public:
             };
         };
 
-
         for (int i=0; i < selected.size(); i++) {
             selected[i]->_should_be_divided = true;
         };
 
-        // Remove simplexes which do not satisfy condition:   f - slope*d > f_min - epsilon*abs(f_min)
-        for (int i=0; i < selected.size() -1; i++) {
-            double a1 = selected[selected.size() - i -1]->_diameter;
-            double b1 = selected[selected.size() - i -1]->_min_lb_value;
-            double a2 = selected[selected.size() - i -2]->_diameter;
-            double b2 = selected[selected.size() - i -2]->_min_lb_value;
-            double slope = (b2 - double(b1))/(a2 - a1);
-            double bias = b1 - slope * a1;
-
-            if (bias > f_min - 0.0001*fabs(f_min)) {   // epsilon
-                selected[selected.size() - i -2]->_should_be_divided = false;
-            };
-        };
+        // // Remove simplexes which do not satisfy condition:   f - slope*d > f_min - epsilon*abs(f_min)
+        // for (int i=0; i < selected.size() -1; i++) {  // I gess error here - bias is incorrect
+        //     double a1 = selected[selected.size() - i -1]->_diameter;
+        //     double b1 = selected[selected.size() - i -1]->_tolerance;
+        //     double a2 = selected[selected.size() - i -2]->_diameter;
+        //     double b2 = selected[selected.size() - i -2]->_tolerance;
+        //     double slope = (b2 - double(b1))/(a2 - a1);
+        //     double bias = b1 - slope * a1;
+        //     // cout << "slope = (b2 - double(b1))/(a2 - a1);   bias = b1 - slope * a1;" << endl;
+        //     // cout << "b-remove if    bias > f_min - 0.0001*fabs(f_min)" << endl;
+        //     // cout << "a1 " << a1 << " b1 " << b1 << " a2 " << a2 << " b2 " << b2 << endl;
+        //     // cout << "slope " << slope << " bias " << bias << endl;
+        //     // cout << "bias: " << bias << " fmin " << f_min << endl;
+        //     // cout << endl;
+        //
+        //     if (bias > f_min - 0.0001*fabs(f_min)) {   // epsilon
+        //         selected[selected.size() - i -2]->_should_be_divided = false;
+        //     };
+        // };
 
         // Remove simplexes which should not be divided
         selected.erase(remove_if(selected.begin(), selected.end(), Simplex::wont_be_divided), selected.end());
 
-        // Select all simplexes which have best _min_vert_value for its size 
+        // Select all simplexes which have best _tolerance for its size 
         for (int i=0; i < sorted_partition.size(); i++) {
             for (int j=0; j < selected.size(); j++) {
                 if ((sorted_partition[i]->_diameter == selected[j]->_diameter) && 
-                    (sorted_partition[i]->_min_lb_value == selected[j]->_min_lb_value)) {
+                    (sorted_partition[i]->_tolerance == selected[j]->_tolerance)) {
                     selected_simplexes.push_back(sorted_partition[i]);
                 };
             };
@@ -360,12 +365,18 @@ public:
             //     cout << " ---- " << endl;
             // };
                 
-            int n = _func->_D;
+            int n = _funcs[0]->_D;
             double c[n];
             for (int i=0; i < n; i++) {
                 c[i] = (simplex->_le_v1->_X[i] + simplex->_le_v2->_X[i]) / 2.;
             };
-            Point* middle_point = _func->get(c, n);
+
+            Point* middle_point = _funcs[0]->get(c, n);
+            for (int j=1; j < _funcs.size(); j++) {
+                _funcs[j]->update_meta(middle_point);
+            };
+            update_pareto_front(middle_point);
+
             // Construct two new simplexes using this middle point.
             Simplex* left_simplex = new Simplex(_lower_bound_strategy, _L_strategy, _parent_L_part, _simplex_gradient_strategy);
             Simplex* right_simplex = new Simplex(_lower_bound_strategy, _L_strategy, _parent_L_part, _simplex_gradient_strategy);
@@ -388,8 +399,8 @@ public:
 
             left_simplex->_parent = simplex;
             right_simplex->_parent = simplex;
-            left_simplex->init_parameters(_func);
-            right_simplex->init_parameters(_func);
+            left_simplex->init_parameters(_funcs);
+            right_simplex->init_parameters(_funcs);
 
             // Update new simplexes neighbours based on their parent neighbours
             // Divided simplexes are neighbours.
@@ -463,16 +474,60 @@ public:
         return new_simplexes;
     };
 
+    bool is_accurate_enough() {
+        for (int i=0; i < _funcs.size(); i++) {
+            if (!_funcs[i]->is_accurate_enougth()) {
+                return false;
+            }
+        };
+        return true;
+    };
 
-    void minimize(Function* func){
-        _func = func;
+    // domination returns 0 > , 1 = , 2 <
+    int domination(Point* q, Point* p) {
+        // 0 - q domiates p
+        // 1 - none of them dominates
+        // 2 - p dominates q
+        int q_better = 0;
+        int p_better = 0;
+        for (int i=0; i < q->_values.size(); i++) {
+            if (q->_values[i] < p->_values[i]) { q_better++; };
+            if (q->_values[i] > p->_values[i]) { p_better++; };
+        };
+        if (q_better == q->_values.size()) { return 0; }
+        if (p_better == q->_values.size()) { return 2; }
+        return 1;
+    };
+
+    bool update_pareto_front(Point* p) { // Returns if value if point was added to pareto_front
+        // if any(q > p for q in S):
+        //     return
+        // for q in [q for q in S if p > q]:
+        //     S.remove(q)
+        //     S.add(p)
+
+        vector<int> dominated; 
+        int relation;
+        for (int i=0; i < _pareto_front.size(); i++) {
+            relation = domination(_pareto_front[i], p);  // domination returns 0 > , 1 = , 2 <
+            if (relation == 0) { return false; };
+            if (relation == 2) { dominated.push_back(i); };
+        };
+        for (int i = dominated.size() - 1; i >= 0; i--) {
+            _pareto_front.erase(_pareto_front.begin() + dominated[i], _pareto_front.begin() + dominated[i] +1);
+        };
+        _pareto_front.push_back(p);
+        return true;
+    };
+
+    void minimize(vector<Function*> funcs){
+        _funcs = funcs;
         timestamp_t start = get_timestamp();
         partition_feasable_region_combinatoricly();     // Note: Should not use global variables
-
-        Simplex::update_estimates(_partition, _func);
+        Simplex::update_estimates(_partition, _funcs, _pareto_front);
         sort(_partition.begin(), _partition.end(), Simplex::ascending_diameter);
 
-        while (_func->_calls <= _max_calls && _duration <= _max_duration && !_func->is_accurate_enougth()) { // _func->pe() > _min_pe){
+        while (_funcs[0]->_calls <= _max_calls && _duration <= _max_duration && !is_accurate_enough()) { // _func->pe() > _min_pe){
             // Selects simplexes to divide
             vector<Simplex*> simplexes_to_divide;
             if (_iteration == 0) {
@@ -481,11 +536,17 @@ public:
                 simplexes_to_divide = select_simplexes_to_divide();
             };
 
+            // if (_iteration == 1) {
+            //     // Simplex::print(_partition, "Partition: ");
+            //     // cout << _iteration << ". Simplexes: " << _partition.size() << "  calls: " << _funcs[0]->_calls << "  f1_min:" << _funcs[0]->_f_min << "  f2_min:" << _funcs[1]->_f_min << endl;
+            //     exit(0);
+            // };
+
             // if (_iteration == 200) {
             //     cout << "Selected simpls: " << _iteration << endl;
             //     for (int i=0; i < simplexes_to_divide.size(); i++) {
             //         // simplexes_to_divide[i]->print();
-            //         cout << "(" << simplexes_to_divide[i]->_diameter << ", " << simplexes_to_divide[i]->_min_lb_value<< "), ";
+            //         cout << "(" << simplexes_to_divide[i]->_diameter << ", " << simplexes_to_divide[i]->_tolerance<< "), ";
             //     };
             //     cout << endl;
             // }
@@ -499,7 +560,7 @@ public:
             //     exit(0);
             // };
 
-            // Draw partition in each iteration:
+            //// Draw partition in each iteration:
             // Simplex::log_partition(_partition, simplexes_to_divide);
             // FILE* test = popen("python log/show_partition.py log/partition.txt", "r");
             // pclose(test);
@@ -514,18 +575,18 @@ public:
                 _all_simplexes.push_back(new_simplexes[i]);
             };
             // cout << "Searching estimates for simplexes: " <<  _partition.size() << endl;
-            Simplex::update_estimates(_partition, _func);
+            Simplex::update_estimates(_partition, _funcs, _pareto_front);
             sort(_partition.begin(), _partition.end(), Simplex::ascending_diameter);
 
             // Update counters and log the status
             _iteration += 1;
-            cout << _iteration << ". Simplexes: " << _partition.size() << "  calls: " << _func->_calls << "  f_min:" << _func->_f_min << endl;
+            cout << _iteration << ". Simplexes: " << _partition.size() << "  calls: " << _funcs[0]->_calls << "  f1_min:" << _funcs[0]->_f_min << "  f2_min:" << _funcs[1]->_f_min << endl;
 
             timestamp_t end = get_timestamp();
             _duration = (end - start) / 1000000.0L;
         };
 
-        if ((_func->_calls <= _max_calls) && (_duration <= _max_duration)) {
+        if ((_funcs[0]->_calls <= _max_calls) && (_duration <= _max_duration)) {
             _status = "D"; 
         } else {
             _status = "S";

@@ -12,6 +12,14 @@ double l2norm(Point* p1, Point* p2) {
     return sqrt(squared_sum);
 };
 
+double l2norm(vector<double> p1, vector<double> p2) {
+    double squared_sum = 0;
+    for (int i=0; i < p1.size(); i++){
+        squared_sum += pow(p1[i] - p2[i], 2);
+    };
+    return sqrt(squared_sum);
+};
+
 double Determinant(double **a, int n) {
    /* Taken from http://paulbourke.net/miscellaneous/determinant/ */
     int i, j, j1, j2;

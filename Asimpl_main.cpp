@@ -9,9 +9,12 @@
 #define required_argument 1
 #define optional_argument 2
 
+//// Multicriteria convex-hull-from-best 2-diff-vertexes-neighbours (bulk-elbme)
+// Note: Ši algoritmo realizacija skirta tik dviejų kriterijų problemų optimizavimui
+//       nes kai kurie realizacijos sprendimai tinka tik dviejų kriterijų problemoms. 
+
 
 using namespace std;
-
 
 int main(int argc, char* argv[]) {
     // Parse parameters
@@ -22,7 +25,8 @@ int main(int argc, char* argv[]) {
         {"callback", required_argument, 0, 'b'},
     };
     int cls;
-    int fid;
+    int fid1;
+    int fid2;
     int task_id;
     char* callback = {'\0'};
 
@@ -35,7 +39,8 @@ int main(int argc, char* argv[]) {
                 cls = strtoul(optarg, 0, 0);
                 break;
             case 'f':
-                fid = strtoul(optarg, 0, 0);
+                fid1 = strtoul(optarg, 0, 0);
+                fid2 = strtoul(optarg, 0, 0) % 100 + 1;
                 break;
             case 't':
                 task_id = strtoul(optarg, 0, 0);
@@ -47,21 +52,22 @@ int main(int argc, char* argv[]) {
     };
 
     // Minimize 
-    GKLSFunction* func;
-    Asimpl* alg;
+    vector<Function*> funcs;
+    funcs.push_back(new GKLSFunction(cls, fid1));
+    funcs.push_back(new GKLSFunction(cls, fid2));
 
-    alg = new Asimpl();
-    func = new GKLSFunction(cls, fid);
+    // Put function vector in order to be able to use more than 2 functions in the future
+    Asimpl* alg = new Asimpl();
 
-    alg->minimize(func);
+    alg->minimize(funcs);
 
     // Save results
-    cout << "Calls " << func->_calls << endl;
+    cout << "Calls " << funcs[0]->_calls << endl;
     if (callback != '\0') {
         string cmd;
         stringstream cmd_ss; 
         cmd_ss << callback
-               << " --calls=" << func->_calls
+               << " --calls=" << funcs[0]->_calls
                << " --subregions=" << alg->_partition.size()
                << " --duration=" << alg->_duration  
                << " --task_id=" << task_id  
@@ -73,6 +79,9 @@ int main(int argc, char* argv[]) {
 
     // Free memory
     delete alg;
-    delete func;
+    for (int i=0; i < funcs.size(); i++) {
+        delete funcs[i];
+    };
+    funcs.clear();
     return 0;
 };

@@ -22,10 +22,11 @@ class Elbme {   // For efficiency do not store links to parents
     Elbme(const Elbme& other) {};
     Elbme& operator=(const Elbme& other) {};
 public:
-    Elbme(vector<Point*> verts, double L) {
+    Elbme(vector<Point*> verts, vector<double> Ls, int crit_id) {
+        _crit_id = crit_id;
         _verts = verts;
         sort(_verts.begin(), _verts.end(), Point::compare_by_value);     // When several longest edges exist: randomness? // Note: Should sorting be done descending?
-        _L = L;
+        _L = Ls[_crit_id];
         _D = _verts.size() - 1;
         _partition.push_back(new Subsimplex(_verts, _L));
         _accuracy = 1e-1;    // should be proportional to problem dimension
@@ -33,6 +34,7 @@ public:
     };
     vector<Point*> _verts;   // Simplex vertexes used for initialization
     double _L;
+    int _crit_id;
     int _D;
     vector<Subsimplex*> _partition;
     vector<Point*> _points;  // Cashe of Point objects to be deleted
@@ -47,8 +49,8 @@ public:
         for (int i=0; i < verts.size(); i++) {
             dist = l2norm(middle_point, verts[i]);
             // cout << lb_value << " is greater thant " << verts[i]->_values[0] - L*dist << endl;
-            if (lb_value < verts[i]->_values[0] - L*dist) {
-                lb_value = verts[i]->_values[0] - L*dist;
+            if (lb_value < verts[i]->_values[_crit_id] - L*dist) {
+                lb_value = verts[i]->_values[_crit_id] - L*dist;
                 min_i = i;
             };
         };
