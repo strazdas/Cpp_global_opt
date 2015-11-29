@@ -306,25 +306,55 @@ public:
             selected[i]->_should_be_divided = true;
         };
 
-        // // Remove simplexes which do not satisfy condition:   f - slope*d > f_min - epsilon*abs(f_min)
-        // for (int i=0; i < selected.size() -1; i++) {  // I gess error here - bias is incorrect
-        //     double a1 = selected[selected.size() - i -1]->_diameter;
-        //     double b1 = selected[selected.size() - i -1]->_tolerance;
-        //     double a2 = selected[selected.size() - i -2]->_diameter;
-        //     double b2 = selected[selected.size() - i -2]->_tolerance;
-        //     double slope = (b2 - double(b1))/(a2 - a1);
-        //     double bias = b1 - slope * a1;
-        //     // cout << "slope = (b2 - double(b1))/(a2 - a1);   bias = b1 - slope * a1;" << endl;
-        //     // cout << "b-remove if    bias > f_min - 0.0001*fabs(f_min)" << endl;
-        //     // cout << "a1 " << a1 << " b1 " << b1 << " a2 " << a2 << " b2 " << b2 << endl;
-        //     // cout << "slope " << slope << " bias " << bias << endl;
-        //     // cout << "bias: " << bias << " fmin " << f_min << endl;
-        //     // cout << endl;
+        //// Should check all criterias, not only first
+        // This part is very irational, because tolerance line and f_min point
+        // are compared.
         //
-        //     if (bias > f_min - 0.0001*fabs(f_min)) {   // epsilon
-        //         selected[selected.size() - i -2]->_should_be_divided = false;
-        //     };
-        // };
+        // Should f1, f2 lines be constructed, but in this case lbm should
+        // known.
+        //
+        // Should use min_lbs values instead of tolerance.
+        //
+        // 
+
+
+
+
+        // Remove simplexes which do not satisfy condition:   f - slope*d > f_min - epsilon*abs(f_min)
+        for (int i=0; i < selected.size() -1; i++) {  // I gess error here - bias is incorrect
+            // All functions should be improved
+            int improvable = 0;
+            for (int j; j < _funcs.size(); j++) {
+                if (selected[i]->_min_lbs[j]->_values[0] < _funcs[j]->_f_min - 0.0001 * fabs(_funcs[j]->_f_min)) {
+                    improvable += 1;
+                };
+            };
+            if (improvable != _funcs.size()) {
+                selected[i]->_should_be_divided = false;
+            };
+
+            // Lbm should be < f_min - epsilon
+
+            // double a1 = selected[selected.size() - i -1]->_diameter;
+            // double b1 = selected[selected.size() - i -1]->_tolerance;
+            // double a2 = selected[selected.size() - i -2]->_diameter;
+            // double b2 = selected[selected.size() - i -2]->_tolerance;
+            // double slope = (b2 - double(b1))/(a2 - a1);
+            // double bias = b1 - slope * a1;
+            // // cout << "slope = (b2 - double(b1))/(a2 - a1);   bias = b1 - slope * a1;" << endl;
+            // // cout << "b-remove if    bias > f_min - 0.0001*fabs(f_min)" << endl;
+            // // cout << "a1 " << a1 << " b1 " << b1 << " a2 " << a2 << " b2 " << b2 << endl;
+            // // cout << "slope " << slope << " bias " << bias << endl;
+            // // cout << "bias: " << bias << " fmin " << f_min << endl;
+            // // cout << endl;
+            //
+            // if (bias > f_min - 0.0001*fabs(f_min)) {   // epsilon
+            //     selected[selected.size() - i -2]->_should_be_divided = false;
+            // };
+
+        };
+
+
 
         // Remove simplexes which should not be divided
         selected.erase(remove_if(selected.begin(), selected.end(), Simplex::wont_be_divided), selected.end());
@@ -524,7 +554,7 @@ public:
         _funcs = funcs;
         timestamp_t start = get_timestamp();
         partition_feasable_region_combinatoricly();     // Note: Should not use global variables
-        Simplex::update_estimates(_partition, _funcs, _pareto_front);
+        Simplex::update_estimates(_partition, _funcs, _pareto_front, 0);
         sort(_partition.begin(), _partition.end(), Simplex::ascending_diameter);
 
         while (_funcs[0]->_calls <= _max_calls && _duration <= _max_duration && !is_accurate_enough()) { // _func->pe() > _min_pe){
@@ -575,7 +605,7 @@ public:
                 _all_simplexes.push_back(new_simplexes[i]);
             };
             // cout << "Searching estimates for simplexes: " <<  _partition.size() << endl;
-            Simplex::update_estimates(_partition, _funcs, _pareto_front);
+            Simplex::update_estimates(_partition, _funcs, _pareto_front, _iteration);
             sort(_partition.begin(), _partition.end(), Simplex::ascending_diameter);
 
             // Update counters and log the status

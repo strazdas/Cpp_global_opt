@@ -142,7 +142,7 @@ public:
 
     // static void extend_region_with_vertex_neighbours(Point* vertex, SimplexTree* region, int depth);
 
-    static void update_estimates(vector<Simplex*> simpls, vector<Function*> funcs, vector<Point*> pareto_front);
+    static void update_estimates(vector<Simplex*> simpls, vector<Function*> funcs, vector<Point*> pareto_front, int iteration);
 
     double find_simplex_gradient_norm(int crit_id, SimplexGradientStrategy simplex_gradient_strategy){ 
         double L_estimate = 0;
@@ -641,7 +641,7 @@ void Point::_neighbours_estimates_should_be_updated() {
 //     };
 // };
 
-void Simplex::update_estimates(vector<Simplex*> simpls, vector<Function*> funcs, vector<Point*> pareto_front) {   // Neighbours strategy - updates estimates
+void Simplex::update_estimates(vector<Simplex*> simpls, vector<Function*> funcs, vector<Point*> pareto_front, int iteration) {   // Neighbours strategy - updates estimates
     for (int sid=0; sid < simpls.size(); sid++) {
         if (simpls[sid]->_should_estimates_be_updated) {
             // Use simplex's \hat{L} as initial max_grad_norms value
