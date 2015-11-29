@@ -329,7 +329,7 @@ public:
                     improvable += 1;
                 };
             };
-            if (improvable != _funcs.size()) {
+            if (improvable == 0) {
                 selected[i]->_should_be_divided = false;
             };
 
