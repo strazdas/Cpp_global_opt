@@ -322,19 +322,25 @@ public:
 
         // Remove simplexes which do not satisfy condition:   f - slope*d > f_min - epsilon*abs(f_min)
         for (int i=0; i < selected.size() -1; i++) {  // I gess error here - bias is incorrect
-            // All functions should be improved
-            int improvable = 0;
-            for (int j; j < _funcs.size(); j++) {
-                if (selected[i]->_min_lbs[j]->_values[0] < _funcs[j]->_f_min - 0.0001 * fabs(_funcs[j]->_f_min)) {
-                    improvable += 1;
-                };
-            };
-            if (improvable == 0) {
-                selected[i]->_should_be_divided = false;
-            };
+            //// Version2: All functions should be improved
+            // int improvable = 0;
+            // for (int j; j < _funcs.size(); j++) {
+            //     if (selected[i]->_min_lbs[j]->_values[0] < _funcs[j]->_f_min - 0.0001 * fabs(_funcs[j]->_f_min)) {
+            //         improvable += 1;
+            //     };
+            // };
+            // if (improvable == 0) {
+            //     selected[i]->_should_be_divided = false;
+            // };
 
-            // Lbm should be < f_min - epsilon
+            //// Version3: Too small simplexes should not be divided (but tolerance should ensure this)
+            // if (selected[i]->_diameter < 1e-5) {
+            //     selected[i]->_should_be_divided = false;
+            // };
 
+            //// Version4: tolerance should ensure this.
+
+            //// VersionOriginal: for single criteria
             // double a1 = selected[selected.size() - i -1]->_diameter;
             // double b1 = selected[selected.size() - i -1]->_tolerance;
             // double a2 = selected[selected.size() - i -2]->_diameter;
@@ -351,7 +357,6 @@ public:
             // if (bias > f_min - 0.0001*fabs(f_min)) {   // epsilon
             //     selected[selected.size() - i -2]->_should_be_divided = false;
             // };
-
         };
 
 
@@ -401,11 +406,17 @@ public:
                 c[i] = (simplex->_le_v1->_X[i] + simplex->_le_v2->_X[i]) / 2.;
             };
 
-            Point* middle_point = _funcs[0]->get(c, n);
-            for (int j=1; j < _funcs.size(); j++) {
-                _funcs[j]->update_meta(middle_point);
+            // Construct middle point
+            Point* tmp_point = new Point(c, n);
+            Point* middle_point = _funcs[0]->get(tmp_point); 
+            if (tmp_point != middle_point) {
+                delete tmp_point;
+            } else {
+                for (int j=1; j < _funcs.size(); j++) {
+                    _funcs[j]->update_meta(middle_point); // Note: update_meta - is not very verbose name
+                };                                        // update would be better name
+                update_pareto_front(middle_point);
             };
-            update_pareto_front(middle_point);
 
             // Construct two new simplexes using this middle point.
             Simplex* left_simplex = new Simplex(_lower_bound_strategy, _L_strategy, _parent_L_part, _simplex_gradient_strategy);
