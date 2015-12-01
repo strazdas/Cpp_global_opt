@@ -62,7 +62,7 @@ int main(int argc, char* argv[]) {
     alg->minimize(funcs);
 
     // Save results
-    cout << "Calls " << funcs[0]->_calls << endl;
+    cout << "Calls " << funcs[0]->_calls <<  " Status " << alg->_status << endl;
     if (callback != '\0') {
         string cmd;
         stringstream cmd_ss; 
