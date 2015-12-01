@@ -321,7 +321,7 @@ public:
 
 
         // Remove simplexes which do not satisfy condition:   f - slope*d > f_min - epsilon*abs(f_min)
-        for (int i=0; i < selected.size() -1; i++) {  // I gess error here - bias is incorrect
+        for (int i=0; i < (signed) selected.size() -1; i++) {  // I gess error here - bias is incorrect
             //// Version2: All functions should be improved
             // int improvable = 0;
             // for (int j; j < _funcs.size(); j++) {
