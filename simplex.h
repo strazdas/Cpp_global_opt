@@ -131,8 +131,8 @@ public:
     vector<Point*> find_accurate_lb_min_estimates(vector<Point*> verts, vector<double> Ls) {
         vector<Point*> estimates_of_accurate_lb_min;
         for (int i=0; i < Ls.size(); i++) {
-            Elbme* alg = new Elbme(verts, Ls, i);
-            // Conte* alg = new Conte(verts, L);
+            // Elbme* alg = new Elbme(verts, Ls, i);
+            Conte* alg = new Conte(verts, Ls, i);
             Point* estimate_of_accurate_lb_min = alg->minimize()->copy();
             delete alg;
             estimates_of_accurate_lb_min.push_back(estimate_of_accurate_lb_min);
@@ -333,6 +333,32 @@ public:
         for (int i=0; i < simplexes.size(); i++){
             simplexes[i]->print();
         };
+    };
+
+    static void log_front(vector<Point*> pareto_front, vector<Simplex*> simplexes_to_divide) {
+       ofstream log_file; 
+       log_file.open("log/front.txt");
+       log_file.close();
+       log_file.open("log/front.txt", ios::app);
+       for (int j=0; j < pareto_front.size(); j++) {
+           for (int i=0; i < pareto_front[j]->size(); i++) {
+                log_file << pareto_front[j]->_X[i] << " ";
+           };
+           log_file << " -> ";
+           for (int i=0; i < pareto_front[j]->_values.size(); i++) {
+               log_file << pareto_front[j]->_values[i] << " ";
+           };
+           log_file << endl;
+       };
+
+       log_file << "Tolerances" << endl;
+       for (int j=0; j < simplexes_to_divide.size(); j++) {
+           for (int i=0; i < simplexes_to_divide[j]->_min_lbs.size(); i++) {
+              log_file <<  simplexes_to_divide[j]->_min_lbs[i]->_values[0] << " ";
+           };
+           log_file << endl;
+       };
+       log_file.close();
     };
 
     static void log_partition(vector<Simplex*> simplexes,

@@ -20,19 +20,22 @@
 using namespace std;
 
 class Conte {   // For efficiency do not store links to parents
+    // Conte uses CS (ComponentS) and CS_LEN (number of components) consts from utils.h
     Conte(const Conte& other) {};
     Conte& operator=(const Conte& other) {};
 public:
-    Conte(vector<Point*> verts, double L) {
+    Conte(vector<Point*> verts, vector<double> Ls, int crit_id) {
         _verts = verts;
-        _L = L;
+        _L = Ls[crit_id];
         _D = _verts.size() - 1;
         _V = _verts.size();
+        _crit_id = crit_id;
     };
     vector<Point*> _verts;   // Simplex vertexes
     double _L;
     int _D;
     int _V;
+    int _crit_id;
 
     double get_lb_value(double* p) {
         /* Returns lb value at a given point */
@@ -48,7 +51,7 @@ public:
             };
             dist = sqrt(dist);
 
-            cone_value = _verts[i]->_values[0] - _L*dist;
+            cone_value = _verts[i]->_values[_crit_id] - _L*dist;
             if (lb_value < cone_value) {
                 lb_value = cone_value;
             };

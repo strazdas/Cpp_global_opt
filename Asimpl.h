@@ -45,6 +45,8 @@ public:
         ofstream log_file; 
         log_file.open("log/partition.txt");
         log_file.close();
+        log_file.open("log/front.txt");
+        log_file.close();
     };
 
     int _max_diff_verts_to_be_neighbour;
@@ -603,7 +605,12 @@ public:
 
             //// Draw partition in each iteration:
             // Simplex::log_partition(_partition, simplexes_to_divide);
-            // FILE* test = popen("python log/show_partition.py log/partition.txt", "r");
+            // FILE* testp = popen("python log/show_partition.py log/partition.txt", "r");
+            // pclose(testp);
+
+            //// Draw pareto front in each iteration:
+            // Simplex::log_front(_pareto_front, simplexes_to_divide);
+            // FILE* test = popen("python log/show_front.py log/front.txt", "r");
             // pclose(test);
 
             // Remove partitioned simplexes from _partition
