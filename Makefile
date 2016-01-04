@@ -5,6 +5,10 @@ compile_asimpl:
 	g++ gkls.c rnd_gen.c Asimpl_main.cpp -o asimpl.out
 	# g++ -std=c++11 gkls.c rnd_gen.c Asimpl_main.cpp -o asimpl.out
 
+compile:
+	@echo "==================================================================================="
+	g++ gkls.c rnd_gen.c Asimpl_main.cpp -o asimpl.out
+
 run_asimpl: compile_asimpl
 	clear
 	./asimpl.out --gkls_cls=5 --gkls_fid=84
