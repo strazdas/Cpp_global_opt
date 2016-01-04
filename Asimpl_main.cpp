@@ -16,10 +16,14 @@ using namespace std;
 int main(int argc, char* argv[]) {
     // Parse parameters
     const struct option longopts[] = {
-        {"gkls_cls", required_argument, 0, 'c'},
-        {"gkls_fid", required_argument, 0, 'f'},
+        // {"gkls_cls", required_argument, 0, 'c'},
+        // {"gkls_fid", required_argument, 0, 'f'},
+        {"func_cls", required_argument, 0, 'c'},
+        {"func_id", required_argument, 0, 'f'},
         {"task_id", required_argument, 0, 't'},
         {"callback", required_argument, 0, 'b'},
+        {"max_duration", optional_argument, 0, 'f'},
+        {"max_calls", optional_argument, 0, 'f'},
     };
     int cls;
     int fid;
