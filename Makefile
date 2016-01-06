@@ -1,11 +1,11 @@
-do: compile_asimpl
+do: compile
 
-compile_asimpl:
+compile:
 	@echo "==================================================================================="
 	g++ gkls.c rnd_gen.c Asimpl_main.cpp -o asimpl.out
 	# g++ -std=c++11 gkls.c rnd_gen.c Asimpl_main.cpp -o asimpl.out
 
-run_asimpl: compile_asimpl
+run_asimpl: compile
 	clear
 	./asimpl.out --gkls_cls=5 --gkls_fid=84
 	
@@ -35,10 +35,10 @@ queue:
 num:
 	ls results/Disimpl-v/ | wc -l
 
-mem_check:  compile_asimpl
+mem_check:  compile
 	valgrind --tool=memcheck --leak-check=full -v ./main.out
 
-profiler:  compile_asimpl
+profiler:  compile
 	valgrind --tool=callgrind ./asimpl.out
 	# git clone https://github.com/jrfonseca/gprof2dot
 	./gprof2dot/gprof2dot.py -f callgrind callgrind.out.X | dot -Tsvg -o profile.svg
