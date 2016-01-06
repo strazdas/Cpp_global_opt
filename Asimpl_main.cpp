@@ -22,13 +22,15 @@ int main(int argc, char* argv[]) {
         {"func_id", required_argument, 0, 'f'},
         {"task_id", required_argument, 0, 't'},
         {"callback", required_argument, 0, 'b'},
-        {"max_duration", optional_argument, 0, 'f'},
-        {"max_calls", optional_argument, 0, 'f'},
+        {"max_duration", optional_argument, 0, 'd'},
+        {"max_calls", optional_argument, 0, 'i'},
     };
     int cls;
     int fid;
     int task_id;
     char* callback = {'\0'};
+    int max_duration = -1;
+    int max_calls = -1;
 
     int opt_id;
     int iarg = 0;
@@ -47,6 +49,12 @@ int main(int argc, char* argv[]) {
             case 'b':
                 callback = strdup(optarg);
                 break;
+            case 'd':
+                max_duration = strtoul(optarg, 0, 0);
+                break;
+            case 'i':
+                max_calls = strtoul(optarg, 0, 0);
+                break;
         };
     };
 
@@ -54,7 +62,16 @@ int main(int argc, char* argv[]) {
     GKLSFunction* func;
     Asimpl* alg;
 
-    alg = new Asimpl();
+    if ((max_duration >= 0) && (max_calls >= 0)) {
+        alg = new Asimpl(max_calls=max_calls, max_duration=max_duration);
+    } else if (max_duration >= 0) {
+        alg = new Asimpl(max_duration=max_duration);
+    } else if (max_calls >= 0) {
+        alg = new Asimpl(max_calls=max_calls);
+    } else {
+        alg = new Asimpl();
+    };
+
     func = new GKLSFunction(cls, fid);
 
     alg->minimize(func);
