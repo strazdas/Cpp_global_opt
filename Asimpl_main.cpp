@@ -31,8 +31,8 @@ int main(int argc, char* argv[]) {
     int fid2;
     int task_id;
     char* callback = {'\0'};
-    int max_duration = -1;
-    int max_calls = -1;
+    int max_calls = 40000;
+    int max_duration = 3600;
 
     int opt_id;
     int iarg = 0;
@@ -61,22 +61,13 @@ int main(int argc, char* argv[]) {
         };
     };
 
-    // Minimize 
+    // Put function vector in order to be able to use more than 2 functions in the future
     vector<Function*> funcs;
     funcs.push_back(new GKLSFunction(cls, fid1));
     funcs.push_back(new GKLSFunction(cls, fid2));
 
     Asimpl* alg;
-    // Put function vector in order to be able to use more than 2 functions in the future
-    if ((max_duration >= 0) && (max_calls >= 0)) {
-        alg = new Asimpl(max_calls=max_calls, max_duration=max_duration);
-    } else if (max_duration >= 0) {
-        alg = new Asimpl(max_duration=max_duration);
-    } else if (max_calls >= 0) {
-        alg = new Asimpl(max_calls=max_calls);
-    } else {
-        alg = new Asimpl();
-    };
+    alg = new Asimpl(max_calls, max_duration);
 
     alg->minimize(funcs);
 
