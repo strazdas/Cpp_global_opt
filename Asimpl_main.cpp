@@ -19,21 +19,25 @@ using namespace std;
 int main(int argc, char* argv[]) {
     // Parse parameters
     const struct option longopts[] = {
-        {"gkls_cls", required_argument, 0, 'c'},
-        {"gkls_fid", required_argument, 0, 'f'},
+        {"func_cls", required_argument, 0, 'c'},
+        {"func_id", required_argument, 0, 'f'},
         {"task_id", required_argument, 0, 't'},
         {"callback", required_argument, 0, 'b'},
+        {"max_duration", optional_argument, 0, 'd'},
+        {"max_calls", optional_argument, 0, 'i'},
     };
     int cls;
     int fid1;
     int fid2;
     int task_id;
     char* callback = {'\0'};
+    int max_duration = -1;
+    int max_calls = -1;
 
     int opt_id;
     int iarg = 0;
     while(iarg != -1) {
-        iarg = getopt_long(argc, argv, "cftb", longopts, &opt_id);
+        iarg = getopt_long(argc, argv, "cftbdi", longopts, &opt_id);
         switch (iarg) {
             case 'c':
                 cls = strtoul(optarg, 0, 0);
@@ -48,6 +52,12 @@ int main(int argc, char* argv[]) {
             case 'b':
                 callback = strdup(optarg);
                 break;
+            case 'd':
+                max_duration = strtoul(optarg, 0, 0);
+                break;
+            case 'i':
+                max_calls = strtoul(optarg, 0, 0);
+                break;
         };
     };
 
@@ -57,7 +67,16 @@ int main(int argc, char* argv[]) {
     funcs.push_back(new GKLSFunction(cls, fid2));
 
     // Put function vector in order to be able to use more than 2 functions in the future
-    Asimpl* alg = new Asimpl();
+    Asimpl* alg;
+    if ((max_duration >= 0) && (max_calls >= 0)) {
+        alg = new Asimpl(max_calls=max_calls, max_duration=max_duration);
+    } else if (max_duration >= 0) {
+        alg = new Asimpl(max_duration=max_duration);
+    } else if (max_calls >= 0) {
+        alg = new Asimpl(max_calls=max_calls);
+    } else {
+        alg = new Asimpl();
+    };
 
     alg->minimize(funcs);
 
