@@ -475,15 +475,6 @@ public:
                 simplexes_to_divide = select_simplexes_to_divide();
             };
 
-            // if (_iteration == 200) {
-            //     cout << "Selected simpls: " << _iteration << endl;
-            //     for (int i=0; i < simplexes_to_divide.size(); i++) {
-            //         // simplexes_to_divide[i]->print();
-            //         cout << "(" << simplexes_to_divide[i]->_diameter << ", " << simplexes_to_divide[i]->_min_lb_value<< "), ";
-            //     };
-            //     cout << endl;
-            // }
-
             // Divide seletected simplexes method
             vector<Simplex*> new_simplexes = divide_simplexes(simplexes_to_divide);
 
