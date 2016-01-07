@@ -16,8 +16,6 @@ using namespace std;
 int main(int argc, char* argv[]) {
     // Parse parameters
     const struct option longopts[] = {
-        // {"gkls_cls", required_argument, 0, 'c'},
-        // {"gkls_fid", required_argument, 0, 'f'},
         {"func_cls", required_argument, 0, 'c'},
         {"func_id", required_argument, 0, 'f'},
         {"task_id", required_argument, 0, 't'},
@@ -29,13 +27,13 @@ int main(int argc, char* argv[]) {
     int fid;
     int task_id;
     char* callback = {'\0'};
-    int max_duration = -1;
-    int max_calls = -1;
+    int max_calls = 40000;
+    int max_duration = 3600;
 
     int opt_id;
     int iarg = 0;
     while(iarg != -1) {
-        iarg = getopt_long(argc, argv, "cftb", longopts, &opt_id);
+        iarg = getopt_long(argc, argv, "cftbdi", longopts, &opt_id);
         switch (iarg) {
             case 'c':
                 cls = strtoul(optarg, 0, 0);
@@ -62,16 +60,7 @@ int main(int argc, char* argv[]) {
     GKLSFunction* func;
     Asimpl* alg;
 
-    if ((max_duration >= 0) && (max_calls >= 0)) {
-        alg = new Asimpl(max_calls=max_calls, max_duration=max_duration);
-    } else if (max_duration >= 0) {
-        alg = new Asimpl(max_duration=max_duration);
-    } else if (max_calls >= 0) {
-        alg = new Asimpl(max_calls=max_calls);
-    } else {
-        alg = new Asimpl();
-    };
-
+    alg = new Asimpl(max_calls, max_duration);
     func = new GKLSFunction(cls, fid);
 
     alg->minimize(func);
