@@ -27,8 +27,8 @@ int main(int argc, char* argv[]) {
     int fid;
     int task_id;
     char* callback = {'\0'};
-    int max_duration = -1;
-    int max_calls = -1;
+    int max_calls = 40000;
+    int max_duration = 3600;
 
     int opt_id;
     int iarg = 0;
@@ -60,17 +60,9 @@ int main(int argc, char* argv[]) {
     GKLSFunction* func;
     Asimpl* alg;
 
-    if ((max_duration >= 0) && (max_calls >= 0)) {
-        alg = new Asimpl(max_calls=max_calls, max_duration=max_duration);
-    } else if (max_duration >= 0) {
-        alg = new Asimpl(max_duration=max_duration);
-    } else if (max_calls >= 0) {
-        alg = new Asimpl(max_calls=max_calls);
-    } else {
-        alg = new Asimpl();
-    };
     func = new GKLSFunction(cls, fid);
 
+    alg = new Asimpl(max_calls, max_duration);
     alg->minimize(func);
 
     // Save results
