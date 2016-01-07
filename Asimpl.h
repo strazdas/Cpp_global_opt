@@ -22,7 +22,7 @@ class Asimpl : public Algorithm {
     Asimpl(const Asimpl& other) {};
     Asimpl& operator=(const Asimpl& other) {};
 public:
-    Asimpl(double epsilon=0.0001, int max_calls=15000, double max_duration=3600) {
+    Asimpl(int max_calls=15000, double max_duration=3600, double epsilon=0.0001) {
         _lower_bound_strategy = LowestEdgeLB;    // Lowest edge is determined by optimising
         _L_strategy = Neighbours;                // Simplex region to get max L from 
         _division_strategy = LongestHalf;        // Simplex division strategy - longest into two parts
