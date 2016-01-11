@@ -24,7 +24,8 @@ public:
     Asimpl(int max_calls=15000, double max_duration=3600, double epsilon=0.0001) {
         _lower_bound_strategy = LowestEdgeLB;    // Lowest edge is determined by optimising
         _L_strategy = Neighbours;                // Simplex region to get max L from 
-        _max_diff_verts_to_be_neighbour = 2;     // Max number of different verts to still be a neighbour
+        // _max_diff_verts_to_be_neighbour = 2;     // Max number of different verts to still be a neighbour
+        _min_same_verts_to_be_neighbour = 1;     // Max number of different verts to still be a neighbour
         _division_strategy = LongestHalf;        // Simplex division strategy - longest into two parts
         _simplex_gradient_strategy = FFMinVert;  // Single simplex L determination strategy (grad norm) 
         _stop_criteria = "x_dist_Serg";          // Stopping criteria
@@ -50,6 +51,7 @@ public:
     };
 
     int _max_diff_verts_to_be_neighbour;
+    int _min_same_verts_to_be_neighbour;
     int _iteration;
 
     void partition_feasable_region_combinatoricly() {
@@ -138,7 +140,7 @@ public:
     };
 
     bool are_neighbours(Simplex* s1, Simplex* s2) {
-        vector<Point*> same_verts(s1->_verts.size()  + s2->_verts.size());
+        vector<Point*> same_verts(s1->_verts.size() + s2->_verts.size());
         vector<Point*>::iterator it;
 
         vector<Point*> s1_verts = s1->_verts;
@@ -156,9 +158,13 @@ public:
         s1_verts.clear();
         s2_verts.clear();
 
-        if (diff_verts_count <= _max_diff_verts_to_be_neighbour) {
+        if (same_verts_count >= _min_same_verts_to_be_neighbour) {
             return true;
         };
+ 
+        // if (diff_verts_count <= _max_diff_verts_to_be_neighbour) {
+        //     return true;
+        // };
         return false;
     };
 
