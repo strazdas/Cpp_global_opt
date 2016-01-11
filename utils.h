@@ -20,6 +20,17 @@ double l2norm(vector<double> p1, vector<double> p2) {
     return sqrt(squared_sum);
 };
 
+double gtl1norm(vector<double> p1, vector<double> p2) {
+    // Greater L1 norm ~ City Block for values which are greater.
+    double norm_value = 0;
+    for (int i=0; i < p1.size(); i++){
+        if ((p1[i] - p2[i]) > 0) {
+            norm_value += p1[i] - p2[i];
+        };
+    };
+    return norm_value;
+};
+
 double Determinant(double **a, int n) {
    /* Taken from http://paulbourke.net/miscellaneous/determinant/ */
     int i, j, j1, j2;
