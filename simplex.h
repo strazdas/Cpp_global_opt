@@ -58,6 +58,7 @@ public:
     SimplexGradientStrategy _simplex_gradient_strategy;
 
     int _D;                       // Variable space dimension
+    int _C;                       // Criteria (objective function) space dimension
     double _tolerance;            // Distance between _min_lb and _min_vert  or _min_lb_value and _min_vert_value
 
     vector<Point*> _verts;        // Simplex vertexes (points with coordinates and values)
@@ -87,7 +88,8 @@ public:
     
     void init_parameters(vector<Function*> funcs) {   // Called when all verts have been added
         _D = _verts.size() - 1;
-        for (int i=0; i < _D; i++) {
+        _C = funcs.size();
+        for (int i=0; i < _C; i++) {
             _Ls.push_back(0);
             _grad_norms.push_back(0);
         };
