@@ -30,6 +30,16 @@ double gtl1norm(vector<double> p1, vector<double> p2) {
     };
     return norm_value;
 };
+double gtl2norm(vector<double> p1, vector<double> p2) {
+    // Greater L2 norm ~ City Block for values which are greater.
+    double squared_sum = 0;
+    for (int i=0; i < p1.size(); i++){
+        if ((p1[i] - p2[i]) > 0) {
+            squared_sum += pow(p1[i] - p2[i], 2);
+        };
+    };
+    return sqrt(squared_sum);
+};
 
 double Determinant(double **a, int n) {
    /* Taken from http://paulbourke.net/miscellaneous/determinant/ */
