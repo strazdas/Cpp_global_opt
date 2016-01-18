@@ -21,13 +21,15 @@ class Algorithm {
     Algorithm(const Algorithm& other){};
     Algorithm& operator=(const Algorithm& other){};
 public:
-    Algorithm(){};
+    Algorithm(){
+        _duration = 0;
+    };
     string _name;
     string _status;
     int _max_calls;
     string _stop_criteria;
     double _min_pe;
-    double _duration = 0;   // Duration in seconds
+    double _duration;   // Duration in seconds
     double _max_duration;   // Maximum allowed duration of minimization in seconds
     double _epsilon;    // How small simplexes should still be partitioned 
     vector<Simplex*> _partition;
