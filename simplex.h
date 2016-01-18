@@ -135,7 +135,7 @@ public:
         for (int i=0; i < Ls.size(); i++) {
             // Elbme* alg = new Elbme(verts, Ls, i);
             Conte* alg = new Conte(verts, Ls, i);
-            Point* estimate_of_accurate_lb_min = alg->minimize()->copy();
+            Point* estimate_of_accurate_lb_min = alg->minimize(); // ->copy();
             delete alg;
             estimates_of_accurate_lb_min.push_back(estimate_of_accurate_lb_min);
         };
