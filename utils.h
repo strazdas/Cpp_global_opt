@@ -2,6 +2,8 @@
 #define UTILS_H 
 #include "functions.h"
 #include <sys/time.h>
+#include <math.h>
+
 
 /* Utility functions */
 double l2norm(Point* p1, Point* p2) {
@@ -18,6 +20,14 @@ double l2norm(vector<double> p1, vector<double> p2) {
         squared_sum += pow(p1[i] - p2[i], 2);
     };
     return sqrt(squared_sum);
+};
+
+double l1norm(Point* p1, Point* p2) {
+    double norm_value = 0;
+    for (int i=0; i < p1->size(); i++){
+        norm_value += fabs(p1->_X[i] - p2->_X[i]);
+    };
+    return norm_value;
 };
 
 double gtl1norm(vector<double> p1, vector<double> p2) {

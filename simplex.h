@@ -197,14 +197,14 @@ public:
         // L_estimate = sqrt(L_estimate);
 
         // Find minimum simplex L and use it if its greater then the estimate
-        double simplex_min_L = find_simplex_min_L(crit_id);
+        double simplex_min_L = find_simplex_min_L_l1norm(crit_id);
         if (simplex_min_L > L_estimate) {
             L_estimate = simplex_min_L;
         };
         return L_estimate;
     };
 
-    double find_simplex_min_L(int crit_id) {
+    double find_simplex_min_L(int crit_id) {  // Finds L using Euclidean (l2norm)
         double dist;
         double f_diff;
         double edge_L;
@@ -221,6 +221,26 @@ public:
         };
         return max_edge_L;
     };
+
+    double find_simplex_min_L_l1norm(int crit_id) {  // Finds L using City block (l1norm)
+        double dist;
+        double f_diff;
+        double edge_L;
+        double max_edge_L = -numeric_limits<double>::max();
+        for (int i=0; i < _verts.size(); i++) {
+            for (int j=i+1; j < _verts.size(); j++) {
+                f_diff = fabs(_verts[i]->_values[crit_id] - _verts[j]->_values[crit_id]);
+                dist = l1norm(_verts[i], _verts[j]);
+                edge_L = f_diff / dist;   // Note: maybe dist (division by zero) protection is needed?
+                if (edge_L > max_edge_L) {
+                    max_edge_L = edge_L;
+                };
+            };
+        };
+        return max_edge_L;
+    };
+
+
 
     double find_edge_lb_value(Point* _le_v1, Point* _le_v2, double _L) {   // Needs testing
         double dist = l2norm(_le_v1, _le_v2);
