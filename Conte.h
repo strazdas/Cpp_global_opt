@@ -66,7 +66,7 @@ public:
     };
 
     Point* minimize() {       // Returns estimated simplex_lb_min_value
-        double best_value;
+        double best_value = numeric_limits<double>::max();
         double best_p[_D];
         double p[_D];
         double coef;

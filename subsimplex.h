@@ -36,7 +36,7 @@ public:
         _min_lb_value = 0;
         _min_vert = 0;
         _max_vert = 0;
-        _max_vert_value = numeric_limits<double>::min();
+        _max_vert_value = -numeric_limits<double>::max();
         _min_vert_value = numeric_limits<double>::max();
         _should_be_divided = false;
     };
