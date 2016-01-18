@@ -477,6 +477,8 @@ public:
     double _glob_f;  // Predefined global function minimum
     double _L;       // Global Lipschitz constant
 
+    static bool _global_mem_allocated;
+
     int _calls;
     double _f_min;  // Best known function value
     Point* _x_min;  // Point where best known function value is
@@ -564,6 +566,8 @@ public:
         delete _points;
     };
 };
+bool Function::_global_mem_allocated = false;
+
 
 class Branin : public Function {
     Branin(const Branin& other){};
@@ -653,7 +657,12 @@ public:
         GKLS_global_radius = _global_radius;
         GKLS_num_minima = 10;
         GKLS_global_value = GKLS_GLOBAL_MIN_VALUE;
-        assert(GKLS_domain_alloc() == GKLS_OK);
+        if (Function::_global_mem_allocated == true) {
+            GKLS_free();
+        } else {
+            assert(GKLS_domain_alloc() == GKLS_OK);
+            Function::_global_mem_allocated = true;
+        };
         // for (unsigned int i = 0; i < GKLS_dim; i++) {
         //     GKLS_domain_left[i] = -1;
         //     GKLS_domain_right[i] = 1;
@@ -696,8 +705,11 @@ public:
         delete _lb;
         delete _ub;
         delete _glob_x;
-        GKLS_free();
-        GKLS_domain_free();
+        if (Function::_global_mem_allocated) {
+            GKLS_free();
+            GKLS_domain_free();
+            Function::_global_mem_allocated = false;
+        };
     };
 };
 

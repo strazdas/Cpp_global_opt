@@ -104,6 +104,10 @@ int main(int argc, char* argv[]) {
 
     // Free memory
     delete alg;
-    delete funcs[0];
+
+    for (int i=0; i < funcs.size(); i++) {
+        delete funcs[i];
+    };
+    funcs.clear();
     return 0;
 };
