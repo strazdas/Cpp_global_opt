@@ -668,6 +668,7 @@ public:
         for (int i=0; i < _D; i++) {
             _glob_x->_X[i] = (GKLS_minima.local_min[glob_idx][i] - _lb->_X[i]) / (_ub->_X[i]-_lb->_X[i]);
         };
+        _glob_x->add_value(_glob_f);
     };
 
     int _fid;
