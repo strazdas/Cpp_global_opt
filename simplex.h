@@ -197,7 +197,7 @@ public:
         // L_estimate = sqrt(L_estimate);
 
         // Find minimum simplex L and use it if its greater then the estimate
-        double simplex_min_L = find_simplex_min_L_l1norm(crit_id);
+        double simplex_min_L = find_simplex_min_L(crit_id);
         if (simplex_min_L > L_estimate) {
             L_estimate = simplex_min_L;
         };
