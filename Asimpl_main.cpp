@@ -71,8 +71,23 @@ int main(int argc, char* argv[]) {
 
     alg->minimize(funcs);
 
+    // Print results
+    cout << "Cls: " << cls << "  Fid1: " << fid1 << "  Fid2: " << fid2 << endl;
+    if (alg->_status == "S") { cout << "  -->> Suspended <<--" << endl; }
+    cout << "Calls: " << funcs[0]->_calls 
+         << ", status: " << alg->_status  
+         << ", duration: " << alg->_duration  
+         << ", subregions: " << alg->_partition.size() << endl;  
+
+    for (int i=0; i < funcs.size(); i++) {
+        cout.precision(16);
+        cout << "Solution for criteria " << i + 1 << ":" << endl;
+        funcs[i]->_x_nearest_to_glob_x->print();
+        cout << "   Global minima for criteria " << i + 1 << ":" << endl;
+        funcs[i]->_glob_x->print();
+    };
+
     // Save results
-    cout << "Calls " << funcs[0]->_calls << endl;
     if (callback != '\0') {
         string cmd;
         stringstream cmd_ss; 
@@ -89,10 +104,10 @@ int main(int argc, char* argv[]) {
 
     // Free memory
     delete alg;
-    delete funcs[0];
-    // for (int i=0; i < funcs.size(); i++) {
-    //     delete funcs[i];
-    // };
-    // funcs.clear();
+
+    for (int i=0; i < funcs.size(); i++) {
+        delete funcs[i];
+    };
+    funcs.clear();
     return 0;
 };

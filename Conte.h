@@ -14,6 +14,7 @@
 #include <vector>
 #include "utils.h"
 #include "subsimplex.h" 
+#include <math.h>
 // Depencencies are:   main  <  Disimplv  <  Simplex  <  Conte  <  Subsimplex
 
 
@@ -46,10 +47,15 @@ public:
         for (int i=0; i < _verts.size(); i++) {
             // dist = l2norm(point, verts[i]);
             dist = 0;
+            //// L2norm:
             for (int j=0; j < _verts[i]->size(); j++){
                 dist += pow(_verts[i]->_X[j] - p[j], 2);
             };
             dist = sqrt(dist);
+            //// L1norm:
+            // for (int j=0; j < _verts[i]->size(); j++){
+            //     dist += fabs(_verts[i]->_X[j] - p[j]);
+            // };
 
             cone_value = _verts[i]->_values[_crit_id] - _L*dist;
             if (lb_value < cone_value) {
@@ -60,7 +66,7 @@ public:
     };
 
     Point* minimize() {       // Returns estimated simplex_lb_min_value
-        double best_value;
+        double best_value = numeric_limits<double>::max();
         double best_p[_D];
         double p[_D];
         double coef;

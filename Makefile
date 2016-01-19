@@ -36,9 +36,9 @@ num:
 	ls results/Disimpl-v/ | wc -l
 
 mem_check:  compile
-	valgrind --tool=memcheck --leak-check=full -v ./main.out
+	valgrind --tool=memcheck --leak-check=full --track-origins=yes -v ./asimpl.out --func_cls=1 --func_id=1
 
 profiler:  compile
-	valgrind --tool=callgrind ./asimpl.out --gkls_cls=1 --gkls_fid=1
+	valgrind --tool=callgrind ./asimpl.out --func_cls=1 --func_id=1
 	# git clone https://github.com/jrfonseca/gprof2dot bin/gprof2dot
 	./bin/gprof2dot/gprof2dot.py -f callgrind callgrind.out.* | dot -Tsvg -o profile.svg
