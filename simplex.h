@@ -11,8 +11,8 @@ using namespace std;
 
 enum LowerBoundStrategy { MinVert, LongestEdgeLB, LowestEdgeLB, All };
 const char* LBS[] = { "Min vert", "Longest edge LB", "Lowest edge LB", "All", 0 };
-enum LStrategy { Self, ParentSelf, Neighbours };
-const char* LS[] = { "Self", "Parent+Self", "Neighbours", 0 };
+enum LStrategy { Self, Neighbours };
+const char* LS[] = { "Self", "Neighbours", 0 };
 enum DivisionStrategy { LongestHalf };
 const char* DS[] = { "Longest Half", 0 };
 enum SimplexGradientStrategy { FFMinVert, FFMaxVert, FFAllVertMean };
@@ -28,15 +28,12 @@ class Simplex {  // Designed for outer problems
 public:
     Simplex(LowerBoundStrategy lower_bound_strategy,
             LStrategy L_strategy,
-            double parent_L_part,
             SimplexGradientStrategy simplex_gradient_strategy
         ) {
         _lower_bound_strategy = lower_bound_strategy;
         _L_strategy = L_strategy;
-        _parent_L_part = parent_L_part;
         _simplex_gradient_strategy = simplex_gradient_strategy;
         _is_in_partition = true;
-        _parent = 0;
         _diameter = 0;
         _tolerance = 0;
         _le_v1 = 0;
@@ -65,7 +62,6 @@ public:
     bool _is_in_partition;
     bool _should_be_divided;  // Should be divided in next iteration
     bool _should_estimates_be_updated;   // Should Lipschitz constant estimate and its lower bound be updated
-    Simplex* _parent;
     list<Simplex*> _neighbours;
 
     Point* _le_v1;      // Longest edge vertex1
@@ -74,7 +70,6 @@ public:
 
     vector<double> _Ls;          // Cumulative estimates of Lipschitz constants for each criteria
     vector<double> _grad_norms;  // Lipschitz constant estimate calculated by Simplex Gradient Euclidean norm.
-    double _parent_L_part;
 
     // Point* _min_vert;   // Pointer to vertex with lowest function value 
     // double _min_vert_value;  // _min_vert function value 
@@ -135,9 +130,10 @@ public:
         for (int i=0; i < Ls.size(); i++) {
             // Elbme* alg = new Elbme(verts, Ls, i);
             Conte* alg = new Conte(verts, Ls, i);
-            Point* estimate_of_accurate_lb_min = alg->minimize(); // ->copy();
+            Point* estimate_of_accurate_lb_min = alg->minimize();
+            estimates_of_accurate_lb_min.push_back(estimate_of_accurate_lb_min->copy());
+            delete estimate_of_accurate_lb_min;
             delete alg;
-            estimates_of_accurate_lb_min.push_back(estimate_of_accurate_lb_min);
         };
         return estimates_of_accurate_lb_min;
     };
@@ -429,6 +425,10 @@ public:
         for (int i=0; i < _min_lbs.size(); i++) {
             delete _min_lbs[i];
         };
+        // Remove pointers from vertices to this simplex
+        for (int i=0; i < _verts.size(); i++) {
+            _verts[i]->_simplexes.erase(remove(_verts[i]->_simplexes.begin(), _verts[i]->_simplexes.end(), this), _verts[i]->_simplexes.end());
+        };
         _min_lbs.clear();
         // delete _min_lb;
         _verts.clear();
@@ -450,7 +450,6 @@ void Point::_neighbours_estimates_should_be_updated() {
 //     SimplexTreeNode(Simplex* value){
 //         _height = 1;
 //         _value = value;
-//         _parent = 0;
 //         _left = 0;
 //         _right = 0;
 //     };
