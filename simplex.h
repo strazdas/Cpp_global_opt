@@ -280,12 +280,10 @@ public:
         double min_dist = numeric_limits<double>::max();
 
         for (int i=0; i < pareto_front.size(); i++) {
-            if ((M[0] < pareto_front[i]->_values[0]) && (M[1] < pareto_front[i]->_values[1])) {
-                double dist = gtl1norm(pareto_front[i]->_values, M);
-                if (dist < min_dist) {
-                    min_dist = dist;
-                };
-            }
+            double dist = gtl1norm(pareto_front[i]->_values, M);
+            if (dist < min_dist) {
+                min_dist = dist;
+            };
         };
         // If M is dominated, than do not divide this simplex
         if (min_dist == numeric_limits<double>::max()) {
