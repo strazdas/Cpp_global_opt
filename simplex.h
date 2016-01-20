@@ -47,7 +47,6 @@ public:
         // _min_lbs = 0;
         // _min_lb_value = 0;
         _D = 0;
-        //
     };
 
     LowerBoundStrategy _lower_bound_strategy;
@@ -67,6 +66,8 @@ public:
     Point* _le_v1;      // Longest edge vertex1
     Point* _le_v2; 
     double _diameter;   // Longest edge length
+
+    static vector<double> glob_Ls;
 
     vector<double> _Ls;          // Cumulative estimates of Lipschitz constants for each criteria
     vector<double> _grad_norms;  // Lipschitz constant estimate calculated by Simplex Gradient Euclidean norm.
@@ -426,6 +427,8 @@ public:
         _neighbours.clear();
     };  
 };
+vector<double> Simplex::glob_Ls;
+
 
 void Point::_neighbours_estimates_should_be_updated() {
     for (int sid=0; sid < _simplexes.size(); sid++) {
@@ -707,7 +710,20 @@ void Simplex::update_estimates(vector<Simplex*> simpls, vector<Function*> funcs,
                 delete simpls[sid]->_min_lbs[i];
             };
 
-            simpls[sid]->_min_lbs = simpls[sid]->find_accurate_lb_min_estimates(simpls[sid]->_verts, simpls[sid]->_Ls);
+            //// Update global Ls
+            if (Simplex::glob_Ls.size() < funcs.size()) {
+                for (int i=0; i < simpls[sid]->_Ls.size(); i++) {
+                    Simplex::glob_Ls.push_back(simpls[sid]->_Ls[i]);
+                };
+            } else {
+                for (int i=0; i < simpls[sid]->_Ls.size(); i++) {
+                    if (Simplex::glob_Ls[i] < simpls[sid]->_Ls[i]) {
+                        Simplex::glob_Ls[i] = simpls[sid]->_Ls[i];
+                    };
+                };
+            };
+
+            simpls[sid]->_min_lbs = simpls[sid]->find_accurate_lb_min_estimates(simpls[sid]->_verts, Simplex::glob_Ls);
 
             simpls[sid]->_tolerance = simpls[sid]->find_tolerance(pareto_front);
 
