@@ -48,14 +48,14 @@ public:
             // dist = l2norm(point, verts[i]);
             dist = 0;
             //// L2norm:
-            for (int j=0; j < _verts[i]->size(); j++){
-                dist += pow(_verts[i]->_X[j] - p[j], 2);
-            };
-            dist = sqrt(dist);
-            //// L1norm:
             // for (int j=0; j < _verts[i]->size(); j++){
-            //     dist += fabs(_verts[i]->_X[j] - p[j]);
+            //     dist += pow(_verts[i]->_X[j] - p[j], 2);
             // };
+            // dist = sqrt(dist);
+            //// L1norm:
+            for (int j=0; j < _verts[i]->size(); j++){
+                dist += fabs(_verts[i]->_X[j] - p[j]);
+            };
 
             cone_value = _verts[i]->_values[_crit_id] - _L*dist;
             if (lb_value < cone_value) {
