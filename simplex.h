@@ -38,7 +38,7 @@ public:
         _tolerance = 0;
         _le_v1 = 0;
         _le_v2 = 0;
-        // _min_vert = 0;
+        _min_vert = 0;
         // _max_vert = 0;
         // _max_vert_value = -numeric_limits<double>::max();
         // _min_vert_value = numeric_limits<double>::max();
@@ -71,7 +71,7 @@ public:
     vector<double> _Ls;          // Cumulative estimates of Lipschitz constants for each criteria
     vector<double> _grad_norms;  // Lipschitz constant estimate calculated by Simplex Gradient Euclidean norm.
 
-    // Point* _min_vert;   // Pointer to vertex with lowest function value 
+    Point* _min_vert;   // Pointer to vertex with lowest function value
     // double _min_vert_value;  // _min_vert function value 
     // Point* _max_vert;
     // double _max_vert_value;
@@ -93,6 +93,7 @@ public:
 
         // Sorts vertexes using first criteria values
         sort(_verts.begin(), _verts.end(), Point::compare_by_value);  // Is there calculation of intersection anywhere in the algorithm, in this case sorting by adress is needed?
+        _min_vert = _verts[0];
 
         // Find longest edge length and verts
         double edge_length;  // Temporary variable
@@ -144,22 +145,21 @@ public:
 
     double find_simplex_gradient_norm(int crit_id, SimplexGradientStrategy simplex_gradient_strategy){ 
         double L_estimate = 0;
-        // Eigen::VectorXd f_diff(_D);
-        // Eigen::MatrixXd x_diff(_D, _D);
-        // Eigen::MatrixXd x_diff_inv_T(_D, _D);
-        // Eigen::VectorXd grad(_D);
-        //
-        // if (simplex_gradient_strategy == FFMinVert) {  // Gradient at min vertex
-        //     // throw "FFMaxVert gradient strategy not implemented yet";
-        // //     for (int i=1; i < D+1; i++) { 
-        // //         f_diff(i - 1) = _verts[i]->_values[0] - _min_vert->_values[0];
-        // //     }; 
-        // //
-        // //     for (int i=1; i < D+1; i++) {
-        // //         for (int j=0; j < D; j++) {
-        // //             x_diff(i-1, j) = _verts[i]->_X[j] - _min_vert->_X[j];
-        // //         };
-        // //     };
+        Eigen::VectorXd f_diff(_D);
+        Eigen::MatrixXd x_diff(_D, _D);
+        Eigen::MatrixXd x_diff_inv_T(_D, _D);
+        Eigen::VectorXd grad(_D);
+
+        //// Gradient at min vertex
+        for (int i=1; i < _D + 1; i++) {
+            f_diff(i - 1) = _verts[i]->_values[0] - _min_vert->_values[0];
+        };
+
+        for (int i=1; i < _D + 1; i++) {
+            for (int j=0; j < _D; j++) {
+                x_diff(i-1, j) = _verts[i]->_X[j] - _min_vert->_X[j];
+            };
+        };
         // };
         // if (simplex_gradient_strategy == FFMaxVert) {  // Gradient at max vertex
         //     // throw "FFMaxVert gradient strategy not implemented yet";
@@ -173,24 +173,17 @@ public:
         // //         };
         // //     };
         // };
-        // if (simplex_gradient_strategy == FFMaxVert) {
-        //     // throw "FFMaxVert gradient strategy not implemented yet";
-        //     // FFAllVertMean
-        // };
-        //
-        // // Find gradient at lowest point
-        // x_diff_inv_T = x_diff.inverse().transpose();
-        // for (int i=0; i < _D; i++) {
-        //     grad[i] = x_diff_inv_T.row(i).dot(f_diff);
-        // };
-        //
-        // // cout << grad << endl;
-        //
-        // // Find norm of gradient at _min_vert 
-        // for (int i=0; i < grad.size(); i++){
-        //     L_estimate += pow(grad[i], 2);
-        // };
-        // L_estimate = sqrt(L_estimate);
+
+        x_diff_inv_T = x_diff.inverse().transpose();
+        for (int i=0; i < _D; i++) {
+            grad[i] = x_diff_inv_T.row(i).dot(f_diff);
+        };
+
+        //// Find norm of gradient at _min_vert 
+        for (int i=0; i < grad.size(); i++){
+            L_estimate += pow(grad[i], 2);
+        };
+        L_estimate = sqrt(L_estimate);
 
         // Find minimum simplex L and use it if its greater then the estimate
         double simplex_min_L = find_simplex_min_L(crit_id);
