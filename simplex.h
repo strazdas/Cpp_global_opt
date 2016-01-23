@@ -684,7 +684,7 @@ void Point::_neighbours_estimates_should_be_updated() {
 
 void Simplex::update_estimates(vector<Simplex*> simpls, vector<Function*> funcs, vector<Point*> pareto_front, int iteration) {   // Neighbours strategy - updates estimates
     for (int sid=0; sid < simpls.size(); sid++) {
-        // if (simpls[sid]->_should_estimates_be_updated) {
+        if (simpls[sid]->_should_estimates_be_updated) {
             // Use simplex's \hat{L} as initial max_grad_norms value
             vector<double> max_grad_norms;
             for (int i=0; i < simpls[sid]->_grad_norms.size(); i++) {
@@ -692,13 +692,13 @@ void Simplex::update_estimates(vector<Simplex*> simpls, vector<Function*> funcs,
             };
 
             // Find max \hat{L} among neighbours
-            for (list<Simplex*>::iterator it=simpls[sid]->_neighbours.begin(); it != simpls[sid]->_neighbours.end(); ++it) {
-                for (int i=0; i < funcs.size(); i++) {
-                    if ((*it)->_grad_norms[i] > max_grad_norms[i]) {
-                        max_grad_norms[i] = (*it)->_grad_norms[i];
-                    };
-                };
-            };
+            // for (list<Simplex*>::iterator it=simpls[sid]->_neighbours.begin(); it != simpls[sid]->_neighbours.end(); ++it) {
+            //     for (int i=0; i < funcs.size(); i++) {
+            //         if ((*it)->_grad_norms[i] > max_grad_norms[i]) {
+            //             max_grad_norms[i] = (*it)->_grad_norms[i];
+            //         };
+            //     };
+            // };
 
             // Update simplex's L
             for (int i=0; i < funcs.size(); i++) {
@@ -719,6 +719,10 @@ void Simplex::update_estimates(vector<Simplex*> simpls, vector<Function*> funcs,
                 for (int i=0; i < simpls[sid]->_Ls.size(); i++) {
                     if (Simplex::glob_Ls[i] < simpls[sid]->_Ls[i]) {
                         Simplex::glob_Ls[i] = simpls[sid]->_Ls[i];
+                        for (int k=0; k < simpls.size(); k++) {
+                            simpls[k]->_should_estimates_be_updated = true;
+                        };
+                        Simplex::update_estimates(simpls, funcs, pareto_front, iteration);
                     };
                 };
             };
@@ -728,7 +732,7 @@ void Simplex::update_estimates(vector<Simplex*> simpls, vector<Function*> funcs,
             simpls[sid]->_tolerance = simpls[sid]->find_tolerance(pareto_front);
 
             simpls[sid]->_should_estimates_be_updated = false;
-        // };
+        };
     };
 
     // Note: gali būti, kad slope apibrėžimas pas mane netinkamas atmetant
