@@ -10,7 +10,7 @@ run_asimpl: compile
 
 compile: 
 	@echo "==================================================================================="
-	g++ -std=c++11 gkls.c rnd_gen.c Asimpl_main.cpp -o asimpl.out
+	g++ gkls.c rnd_gen.c Asimpl_main.cpp -o asimpl.out
 
 test:
 	g++ -std=c++11 test.cpp -o test.out
@@ -37,9 +37,9 @@ run_elbme: compile_elbme
 	./elbme.out
 
 # Deprecated: add algorithm name next to command
-compile: 
-	@echo "==================================================================================="
-	g++ gkls.c rnd_gen.c main.cpp -o main.out
+# compile: 
+# 	@echo "==================================================================================="
+# 	g++ gkls.c rnd_gen.c main.cpp -o main.out
 
 compile_mpi:
 	/opt/openmpi/bin/mpiCC -o mpi_main.out gkls.c rnd_gen.c mpi_main.cpp
