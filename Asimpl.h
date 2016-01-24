@@ -89,7 +89,7 @@ public:
                 triangle[vertex + 1][teta[vertex]] = 1;
             }
 
-            Simplex* simpl = new Simplex(_lower_bound_strategy, _L_strategy, _parent_L_part, _simplex_gradient_strategy);
+            Simplex* simpl = new Simplex(_lower_bound_strategy, _L_strategy, _simplex_gradient_strategy);
             for (int i=0; i < n + 1; i++){
                 Point* tmp_point = new Point(triangle[i], n);
                 Point* point = _func->get(tmp_point); 
@@ -373,8 +373,8 @@ public:
             };
             Point* middle_point = _func->get(c, n);
             // Construct two new simplexes using this middle point.
-            Simplex* left_simplex = new Simplex(_lower_bound_strategy, _L_strategy, _parent_L_part, _simplex_gradient_strategy);
-            Simplex* right_simplex = new Simplex(_lower_bound_strategy, _L_strategy, _parent_L_part, _simplex_gradient_strategy);
+            Simplex* left_simplex = new Simplex(_lower_bound_strategy, _L_strategy, _simplex_gradient_strategy);
+            Simplex* right_simplex = new Simplex(_lower_bound_strategy, _L_strategy, _simplex_gradient_strategy);
 
             for (int i=0; i < simplex->size(); i++){
                 // Point* point = _func->get(new Point(triangle[i], n)); 
@@ -392,8 +392,6 @@ public:
             };
             middle_point->_neighbours_estimates_should_be_updated();   // Note: this method should also be updated to take into account Algorithm._max_diff_verts_to_be_neighbour
 
-            left_simplex->_parent = simplex;
-            right_simplex->_parent = simplex;
             left_simplex->init_parameters(_func);
             right_simplex->init_parameters(_func);
 
@@ -511,7 +509,11 @@ public:
 
             // Remove partitioned simplexes from _partition
             _partition.erase(remove_if(_partition.begin(), _partition.end(), Simplex::not_in_partition), _partition.end());
-            // Delete simplexes?
+            // Delete simplexes
+            for (int i=0; i < simplexes_to_divide.size(); i++) {
+                delete simplexes_to_divide[i];
+            };
+            simplexes_to_divide.clear();
 
             // Add new simplexes to _partition and _all_simplexes
             for (int i=0; i < new_simplexes.size(); i++) {
@@ -539,7 +541,12 @@ public:
         // Draw partitioning: output simplex coordinates to file and draw it with Python
     };
 
-    virtual ~Asimpl(){};
+    virtual ~Asimpl(){
+       //  for (int i=0; i < _partition.size(); i++) {
+       //     delete _partition[i];
+       //  }; 
+       // _partition.clear();
+    };
 };
 
 #endif

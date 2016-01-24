@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
     };
 
     // Free memory
-    delete alg;
-    delete func;
+    // delete alg;
+    // delete func;
     return 0;
 };

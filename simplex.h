@@ -29,15 +29,12 @@ class Simplex {  // Suitable for outer problems
 public:
     Simplex(LowerBoundStrategy lower_bound_strategy,
             LStrategy L_strategy,
-            double parent_L_part,
             SimplexGradientStrategy simplex_gradient_strategy
         ) {  // Should accept Lower_Bound_strategy and L_strategy parameter.
         _lower_bound_strategy = lower_bound_strategy;
         _L_strategy = L_strategy;
-        _parent_L_part = parent_L_part;
         _simplex_gradient_strategy = simplex_gradient_strategy;
         _is_in_partition = true;
-        _parent = 0;
         _diameter = 0;
         _le_v1 = 0;
         _le_v2 = 0;
@@ -72,7 +69,6 @@ public:
     bool _is_in_partition;
     bool _should_be_divided;  // Should be divided in next iteration
     bool _should_estimates_be_updated;   // Should Lipschitz constant estimate and its lower bound be updated
-    Simplex* _parent;
     list<Simplex*> _neighbours;
 
     Point* _le_v1;      // Longest edge vertex1
@@ -81,7 +77,6 @@ public:
 
     double _L;          // Cumulative estimate of Lipschitz constant 
     double _grad_norm;  // Lipschitz constant estimate calculated by Simplex Gradient Euclidean norm.
-    double _parent_L_part;
 
     Point* _min_vert;   // Pointer to vertex with lowest function value 
     double _min_vert_value;  // _min_vert function value 
@@ -368,6 +363,11 @@ public:
 
     virtual ~Simplex(){
         delete _min_lb;
+
+        // Remove pointers from vertices to this simplex
+        for (int i=0; i < _verts.size(); i++) {
+            _verts[i]->_simplexes.erase(remove(_verts[i]->_simplexes.begin(), _verts[i]->_simplexes.end(), this), _verts[i]->_simplexes.end());
+        };
         _verts.clear();
         _neighbours.clear();
     };  

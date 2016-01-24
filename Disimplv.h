@@ -38,7 +38,6 @@ public:
     LStrategy _L_strategy;                      // Lipschitz constant estimation strategy
     DivisionStrategy _division_strategy;        // Simplex edge division strategy
     SimplexGradientStrategy _simplex_gradient_strategy;
-    double _parent_L_part;
 
     /* Global optimization strategies */
     void partition_feasable_region_combinatoricly(){
@@ -67,7 +66,7 @@ public:
                 triangle[vertex + 1][teta[vertex]] = 1;
             }
 
-            Simplex* simpl = new Simplex(_lower_bound_strategy, _L_strategy, _parent_L_part, _simplex_gradient_strategy);
+            Simplex* simpl = new Simplex(_lower_bound_strategy, _L_strategy, _simplex_gradient_strategy);
             for (int i=0; i < n + 1; i++){
                 Point* tmp_point = new Point(triangle[i], n);
                 Point* point = _func->get(tmp_point); 
@@ -94,8 +93,8 @@ public:
             };
             Point* middle_point = _func->get(c, n);
             // Construct two new simplexes using this middle point.
-            Simplex* left_simplex = new Simplex(_lower_bound_strategy, _L_strategy, _parent_L_part, _simplex_gradient_strategy);
-            Simplex* right_simplex = new Simplex(_lower_bound_strategy, _L_strategy, _parent_L_part, _simplex_gradient_strategy);
+            Simplex* left_simplex = new Simplex(_lower_bound_strategy, _L_strategy, _simplex_gradient_strategy);
+            Simplex* right_simplex = new Simplex(_lower_bound_strategy, _L_strategy, _simplex_gradient_strategy);
 
             for (int i=0; i < simplex->size(); i++){
                 // Point* point = _func->get(new Point(triangle[i], n)); 
@@ -113,8 +112,6 @@ public:
             };
             middle_point->_neighbours_estimates_should_be_updated();
 
-            left_simplex->_parent = simplex;
-            right_simplex->_parent = simplex;
             left_simplex->init_parameters(_func);
             right_simplex->init_parameters(_func);
             simplex->_is_in_partition = false;
@@ -180,7 +177,6 @@ public:
              LStrategy L_estimation_strategy=Self,
              DivisionStrategy division_strategy=LongestHalf,
              SimplexGradientStrategy simplex_gradient_strategy=FFMinVert,
-             double parent_L_part=0.1,
              double epsilon=0.0001,
              int max_calls=1000000){
         _lower_bound_strategy = lower_bound_strategy;
@@ -190,7 +186,6 @@ public:
         _stop_criteria = "x_dist_Serg";
         _max_calls = max_calls;
         _epsilon = epsilon;
-        _parent_L_part = parent_L_part;
         // _min_pe = min_pe;
 
         // Construct algorithm name
