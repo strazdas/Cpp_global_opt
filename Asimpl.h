@@ -80,7 +80,7 @@ public:
                 triangle[vertex + 1][teta[vertex]] = 1;
             }
 
-            Simplex* simpl = new Simplex(_lower_bound_strategy, _L_strategy, _parent_L_part, _simplex_gradient_strategy);
+            Simplex* simpl = new Simplex(_lower_bound_strategy, _L_strategy, _simplex_gradient_strategy);
             for (int i=0; i < n + 1; i++){
                 Point* tmp_point = new Point(triangle[i], n);
                 
@@ -97,7 +97,6 @@ public:
             };
             simpl->init_parameters(_funcs);
             _partition.push_back(simpl);
-            _all_simplexes.push_back(simpl);
 
         } while (next_permutation(teta, teta+n));
 
@@ -233,7 +232,7 @@ public:
         return v - 1;
     };
 
-    vector<Simplex*> select_simplexes_by_lb_estimate_and_diameter_convex_hull() {
+    vector<Simplex*> select_simplexes_by_lb_estimate_and_diameter_convex_hull() {  // Selects from best
         vector<Simplex*> selected_simplexes;
 
         // Sort simplexes by their diameter
@@ -388,10 +387,6 @@ public:
 
     virtual vector<Simplex*> select_simplexes_to_divide() {
         vector<Simplex*> selected_simplexes = select_simplexes_by_lb_estimate_and_diameter_convex_hull();
-
-        for (int i=0; i < selected_simplexes.size(); i++){
-            selected_simplexes[i]->_is_in_partition = false;
-        };
         return selected_simplexes;
     };
 
@@ -427,8 +422,8 @@ public:
             };
 
             // Construct two new simplexes using this middle point.
-            Simplex* left_simplex = new Simplex(_lower_bound_strategy, _L_strategy, _parent_L_part, _simplex_gradient_strategy);
-            Simplex* right_simplex = new Simplex(_lower_bound_strategy, _L_strategy, _parent_L_part, _simplex_gradient_strategy);
+            Simplex* left_simplex = new Simplex(_lower_bound_strategy, _L_strategy, _simplex_gradient_strategy);
+            Simplex* right_simplex = new Simplex(_lower_bound_strategy, _L_strategy, _simplex_gradient_strategy);
 
             for (int i=0; i < simplex->size(); i++){
                 // Point* point = _func->get(new Point(triangle[i], n)); 
@@ -446,8 +441,6 @@ public:
             };
             middle_point->_neighbours_estimates_should_be_updated();   // Note: this method should also be updated to take into account Algorithm._max_diff_verts_to_be_neighbour
 
-            left_simplex->_parent = simplex;
-            right_simplex->_parent = simplex;
             left_simplex->init_parameters(_funcs);
             right_simplex->init_parameters(_funcs);
 
@@ -585,12 +578,6 @@ public:
                 simplexes_to_divide = select_simplexes_to_divide();
             };
 
-            // if (_iteration == 1) {
-            //     // Simplex::print(_partition, "Partition: ");
-            //     // cout << _iteration << ". Simplexes: " << _partition.size() << "  calls: " << _funcs[0]->_calls << "  f1_min:" << _funcs[0]->_f_min << "  f2_min:" << _funcs[1]->_f_min << endl;
-            //     exit(0);
-            // };
-
             // if (_iteration == 200) {
             //     cout << "Selected simpls: " << _iteration << endl;
             //     for (int i=0; i < simplexes_to_divide.size(); i++) {
@@ -621,12 +608,16 @@ public:
 
             // Remove partitioned simplexes from _partition
             _partition.erase(remove_if(_partition.begin(), _partition.end(), Simplex::not_in_partition), _partition.end());
-            // Delete simplexes?
+            // Delete simplexes
+            for (int i=0; i < simplexes_to_divide.size(); i++) {
+                delete simplexes_to_divide[i];
+            };
+            simplexes_to_divide.clear();
+           
 
             // Add new simplexes to _partition and _all_simplexes
             for (int i=0; i < new_simplexes.size(); i++) {
                 _partition.push_back(new_simplexes[i]);
-                _all_simplexes.push_back(new_simplexes[i]);
             };
             // cout << "Searching estimates for simplexes: " <<  _partition.size() << endl;
             Simplex::update_estimates(_partition, _funcs, _pareto_front, _iteration);

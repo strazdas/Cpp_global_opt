@@ -33,7 +33,6 @@ public:
     double _max_duration;   // Maximum allowed duration of minimization in seconds
     double _epsilon;    // How small simplexes should still be partitioned 
     vector<Simplex*> _partition;
-    vector<Simplex*> _all_simplexes;
     vector<Function*> _funcs;
     vector<Point*> _pareto_front;
  
@@ -41,7 +40,6 @@ public:
     LStrategy _L_strategy;                      // Lipschitz constant estimation strategy
     DivisionStrategy _division_strategy;        // Simplex edge division strategy
     SimplexGradientStrategy _simplex_gradient_strategy;
-    double _parent_L_part;
 
 
     /* Global optimization strategies */
@@ -71,7 +69,7 @@ public:
     //             triangle[vertex + 1][teta[vertex]] = 1;
     //         }
     //
-    //         Simplex* simpl = new Simplex(_lower_bound_strategy, _L_strategy, _parent_L_part, _simplex_gradient_strategy);
+    //         Simplex* simpl = new Simplex(_lower_bound_strategy, _L_strategy, _simplex_gradient_strategy);
     //         for (int i=0; i < n + 1; i++){
     //             Point* tmp_point = new Point(triangle[i], n);
     //             Point* point = _funcs[0]->get(tmp_point); 
@@ -82,7 +80,6 @@ public:
     //         };
     //         simpl->init_parameters(_funcs);
     //         _partition.push_back(simpl);
-    //         _all_simplexes.push_back(simpl);
     //
     //     } while (next_permutation(teta, teta+n));
     // };
@@ -98,8 +95,8 @@ public:
             };
             Point* middle_point = _funcs[0]->get(c, n);
             // Construct two new simplexes using this middle point.
-            Simplex* left_simplex = new Simplex(_lower_bound_strategy, _L_strategy, _parent_L_part, _simplex_gradient_strategy);
-            Simplex* right_simplex = new Simplex(_lower_bound_strategy, _L_strategy, _parent_L_part, _simplex_gradient_strategy);
+            Simplex* left_simplex = new Simplex(_lower_bound_strategy, _L_strategy, _simplex_gradient_strategy);
+            Simplex* right_simplex = new Simplex(_lower_bound_strategy, _L_strategy, _simplex_gradient_strategy);
 
             for (int i=0; i < simplex->size(); i++){
                 // Point* point = _func->get(new Point(triangle[i], n)); 
@@ -117,8 +114,6 @@ public:
             };
             middle_point->_neighbours_estimates_should_be_updated();
 
-            left_simplex->_parent = simplex;
-            right_simplex->_parent = simplex;
             left_simplex->init_parameters(_funcs);
             right_simplex->init_parameters(_funcs);
             simplex->_is_in_partition = false;
@@ -167,10 +162,9 @@ public:
     };
 
     virtual ~Algorithm(){
-        for (int i=0; i < _all_simplexes.size(); i++) {
-            delete _all_simplexes[i];
+        for (int i=0; i < _partition.size(); i++) {
+            delete _partition[i];
         };
-        _all_simplexes.clear();
         _partition.clear();
     };
 };
