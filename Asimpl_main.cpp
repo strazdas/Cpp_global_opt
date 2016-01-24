@@ -27,7 +27,8 @@ int main(int argc, char* argv[]) {
         {"max_calls", optional_argument, 0, 'i'},
     };
     int cls;
-    int fid;
+    int fid1;
+    int fid2;
     int task_id;
     char* callback = {'\0'};
     int max_calls = 40000;
@@ -42,7 +43,8 @@ int main(int argc, char* argv[]) {
                 cls = strtoul(optarg, 0, 0);
                 break;
             case 'f':
-                fid = strtoul(optarg, 0, 0);
+                fid1 = strtoul(optarg, 0, 0);
+                fid2 = strtoul(optarg, 0, 0) % 100 + 1;
                 break;
             case 't':
                 task_id = strtoul(optarg, 0, 0);
@@ -61,7 +63,8 @@ int main(int argc, char* argv[]) {
 
     // Put function vector in order to be able to use more than 2 functions in the future
     vector<Function*> funcs;
-    funcs.push_back(new GKLSFunction(cls, fid));
+    funcs.push_back(new GKLSFunction(cls, fid1));
+    funcs.push_back(new GKLSFunction(cls, fid2));
 
     Asimpl* alg;
     alg = new Asimpl(max_calls, max_duration);
@@ -69,7 +72,7 @@ int main(int argc, char* argv[]) {
     alg->minimize(funcs);
 
     // Print results
-    cout << "Cls: " << cls << "  Fid: " << fid << endl;
+    cout << "Cls: " << cls << "  Fid1: " << fid1 << "  Fid2:" << fid2 <<  endl;
     if (alg->_status == "S") { cout << "  -->> Suspended <<--" << endl; }
     cout << "Calls: " << funcs[0]->_calls 
          << ", status: " << alg->_status  
