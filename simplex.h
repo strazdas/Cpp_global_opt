@@ -280,6 +280,7 @@ public:
         // Sekti pareto frontą:  naudojant tentą paprastą algoritmą.
         // rasti atstumą iki pareto fronto.
         // For now find lowest distance to vertex.
+
         vector<double> M;
         for (int i=0; i < _min_lbs.size(); i++) {
             M.push_back(_min_lbs[i]->_values[0]);
@@ -729,7 +730,7 @@ void Simplex::update_estimates(vector<Simplex*> simpls, vector<Function*> funcs,
 
             simpls[sid]->_min_lbs = simpls[sid]->find_accurate_lb_min_estimates(simpls[sid]->_verts, simpls[sid]->_Ls);
 
-            simpls[sid]->_tolerance = simpls[sid]->find_tolerance(pareto_front);
+            simpls[sid]->_tolerance = simpls[sid]->_min_lbs[0]->_values[0];  // simpls[sid]->find_tolerance(pareto_front);
 
             simpls[sid]->_should_estimates_be_updated = false;
         };
