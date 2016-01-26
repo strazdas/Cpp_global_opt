@@ -77,7 +77,7 @@ int main(int argc, char* argv[]) {
          << ", subregions: " << alg->_partition.size() << endl;  
 
     for (int i=0; i < funcs.size(); i++) {
-        cout.precision(16);
+        cout.precision(10);
         cout << "Solution for criteria " << i + 1 << ":" << endl;
         funcs[i]->_x_nearest_to_glob_x->print();
         cout << "   Global minima for criteria " << i + 1 << ":" << endl;
@@ -88,13 +88,17 @@ int main(int argc, char* argv[]) {
     if (callback != '\0') {
         string cmd;
         stringstream cmd_ss; 
+        cmd_ss.precision(10);
         cmd_ss << callback
                << " --calls=" << funcs[0]->_calls
                << " --subregions=" << alg->_partition.size()
-               << " --duration=" << alg->_duration  
-               << " --task_id=" << task_id  
-               << " --status=" << alg->_status  
-               << " -exe=" << argv[0];  
+               << " --duration=" << alg->_duration
+               << " --task_id=" << task_id
+               << " --status=" << alg->_status
+               << " --x_min=" << *funcs[0]->_x_min
+               << " --f_min=" << funcs[0]->_f_min
+               << " --global_L=" << Simplex::glob_Ls[0]
+               << " -exe=" << argv[0] << endl;
         cmd = cmd_ss.str();
         popen(cmd.c_str(), "r");
     };
