@@ -25,6 +25,7 @@ int main(int argc, char* argv[]) {
         {"callback", required_argument, 0, 'b'},
         {"max_duration", optional_argument, 0, 'd'},
         {"max_calls", optional_argument, 0, 'i'},
+        {"glob_L", optional_argument, 0, 'g'},
     };
     int cls;
     int fid;
@@ -32,11 +33,12 @@ int main(int argc, char* argv[]) {
     char* callback = {'\0'};
     int max_calls = 40000;
     int max_duration = 3600;
+    double glob_L = numeric_limits<double>::max();
 
     int opt_id;
     int iarg = 0;
     while(iarg != -1) {
-        iarg = getopt_long(argc, argv, "cftbdi", longopts, &opt_id);
+        iarg = getopt_long(argc, argv, "cftbdig", longopts, &opt_id);
         switch (iarg) {
             case 'c':
                 cls = strtoul(optarg, 0, 0);
@@ -56,6 +58,9 @@ int main(int argc, char* argv[]) {
             case 'i':
                 max_calls = strtoul(optarg, 0, 0);
                 break;
+            case 'g':
+                glob_L = strtod(optarg, '\0');
+                break;
         };
     };
 
@@ -65,6 +70,10 @@ int main(int argc, char* argv[]) {
 
     Asimpl* alg;
     alg = new Asimpl(max_calls, max_duration);
+
+    if (glob_L != numeric_limits<double>::max()) {
+        Simplex::glob_Ls.push_back(glob_L);
+    };
 
     alg->minimize(funcs);
 
