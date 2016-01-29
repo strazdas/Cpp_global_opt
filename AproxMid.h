@@ -92,7 +92,15 @@ public:
             X[k] = X[k] / pairs_count;
         };
         Point* mid = new Point(X, _D);
-        mid->add_value(_verts[0]->_values[_crit_id] - _L * l2norm(_verts[0], mid));  // dist to min_vert point  or  value in mid point
+
+        double min_value = get_lb_value(mid->_X);
+        for (int k=0; k < _verts.size(); k++) {
+            if (_verts[k]->_values[_crit_id] < min_value) {
+                min_value = _verts[k]->_values[_crit_id];
+            };
+        };
+
+        mid->add_value(min_value);
         return mid;
     };
 
