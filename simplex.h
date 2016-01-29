@@ -5,6 +5,7 @@
 #include "Eigen/Dense"
 #include "Elbme.h"
 #include "Conte.h"
+#include "AproxMid.h"
 
 using namespace std;
 
@@ -130,7 +131,8 @@ public:
         vector<Point*> estimates_of_accurate_lb_min;
         for (int i=0; i < Ls.size(); i++) {
             // Elbme* alg = new Elbme(verts, Ls, i);
-            Conte* alg = new Conte(verts, Ls, i);
+            // Conte* alg = new Conte(verts, Ls, i);
+            AproxMid* alg = new AproxMid(verts, Ls, i);
             Point* estimate_of_accurate_lb_min = alg->minimize();
             estimates_of_accurate_lb_min.push_back(estimate_of_accurate_lb_min->copy());
             delete estimate_of_accurate_lb_min;
