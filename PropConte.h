@@ -31,7 +31,7 @@ public:
         _V = _verts.size();
         _crit_id = crit_id;
         _diameter = diameter;
-        _min_step_size = 1. / 12;
+        _min_step_size = 1. / 15;
         _steps = ceil(_diameter / (sqrt(_D) * _min_step_size));
         if (_steps < _V) {
             _steps = _V;
