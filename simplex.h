@@ -4,7 +4,7 @@
 #include <list>
 #include "Eigen/Dense"
 #include "Elbme.h"
-#include "Conte.h"
+#include "PropConte.h"
 
 using namespace std;
 
@@ -126,11 +126,11 @@ public:
     };
 
     // Need a scenario where a single simplex is created and I can test with it  
-    vector<Point*> find_accurate_lb_min_estimates(vector<Point*> verts, vector<double> Ls) {
+    vector<Point*> find_accurate_lb_min_estimates(vector<Point*> verts, vector<double> Ls, double diameter) {
         vector<Point*> estimates_of_accurate_lb_min;
         for (int i=0; i < Ls.size(); i++) {
             // Elbme* alg = new Elbme(verts, Ls, i);
-            Conte* alg = new Conte(verts, Ls, i);
+            PropConte* alg = new PropConte(verts, Ls, i, diameter);
             Point* estimate_of_accurate_lb_min = alg->minimize();
             estimates_of_accurate_lb_min.push_back(estimate_of_accurate_lb_min->copy());
             delete estimate_of_accurate_lb_min;
@@ -727,7 +727,7 @@ void Simplex::update_estimates(vector<Simplex*> simpls, vector<Function*> funcs,
                 };
             };
 
-            simpls[sid]->_min_lbs = simpls[sid]->find_accurate_lb_min_estimates(simpls[sid]->_verts, Simplex::glob_Ls);
+            simpls[sid]->_min_lbs = simpls[sid]->find_accurate_lb_min_estimates(simpls[sid]->_verts, Simplex::glob_Ls, simpls[sid]->_diameter);
 
             simpls[sid]->_tolerance = simpls[sid]->_min_lbs[0]->_values[0];   // simpls[sid]->find_tolerance(pareto_front);
 
