@@ -72,7 +72,7 @@ public:
         // combinatorically select vert pairs
         double dist_ab, ca, cb;
         double pairs_count = 0;
-        for (int a=0; a <= _D; a++)
+        for (int a=0; a <= 0; a++)
             for (int b=a; b <= _D; b++)
                 if (a != b) {
                     pairs_count += 1;
