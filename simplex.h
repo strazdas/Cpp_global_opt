@@ -5,6 +5,7 @@
 #include "Eigen/Dense"
 #include "Elbme.h"
 #include "PropConte.h"
+#include "Conte.h"
 
 using namespace std;
 
@@ -143,7 +144,7 @@ public:
         vector<Point*> estimates_of_accurate_lb_min;
         for (int i=0; i < Ls.size(); i++) {
             // Elbme* alg = new Elbme(verts, Ls, i);
-            PropConte* alg = new PropConte(verts, Ls, i, diameter);
+            Conte* alg = new Conte(verts, Ls, i);
             Point* estimate_of_accurate_lb_min = alg->minimize();
             estimates_of_accurate_lb_min.push_back(estimate_of_accurate_lb_min->copy());
             delete estimate_of_accurate_lb_min;
