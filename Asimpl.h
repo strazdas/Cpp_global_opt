@@ -239,7 +239,7 @@ public:
         vector<Simplex*> sorted_partition = _partition;   // Note: Could sort globally, resorting would take less time
 
         // Simplex::print(sorted_partition, "Selecting for division from: ");
-        sort(sorted_partition.begin(), sorted_partition.end(), Simplex::compare_diameter);
+        sort(sorted_partition.begin(), sorted_partition.end(), Simplex::ascending_diameter);
         double f_min = _funcs[0]->_f_min;
 
         // Find simplex with  minimum metric  and  unique diameters
@@ -566,8 +566,9 @@ public:
         _funcs = funcs;
         timestamp_t start = get_timestamp();
         partition_feasable_region_combinatoricly();     // Note: Should not use global variables
-        Simplex::update_estimates(_partition, _funcs, _pareto_front, 0);
         sort(_partition.begin(), _partition.end(), Simplex::ascending_diameter);
+        Simplex::max_diameter = _partition[_partition.size()-1]->_diameter;
+        Simplex::update_estimates(_partition, _funcs, _pareto_front, 0);
 
         while (_funcs[0]->_calls <= _max_calls && _duration <= _max_duration && !is_accurate_enough()) { // _func->pe() > _min_pe){
             // Selects simplexes to divide
@@ -588,7 +589,7 @@ public:
             //     cout << endl;
             // }
 
-            // Divide seletected simplexes method
+            // Divide seletected simplexes
             vector<Simplex*> new_simplexes = divide_simplexes(simplexes_to_divide);
 
             // if (_iteration == 10) {
@@ -615,13 +616,15 @@ public:
             };
             simplexes_to_divide.clear();
 
-            // Add new simplexes to _partition and _all_simplexes
+            // Add new simplexes to _partition
             for (int i=0; i < new_simplexes.size(); i++) {
                 _partition.push_back(new_simplexes[i]);
             };
-            // cout << "Searching estimates for simplexes: " <<  _partition.size() << endl;
-            Simplex::update_estimates(_partition, _funcs, _pareto_front, _iteration);
+
+            // Update estimates
             sort(_partition.begin(), _partition.end(), Simplex::ascending_diameter);
+            Simplex::max_diameter = _partition[_partition.size()-1]->_diameter;
+            Simplex::update_estimates(_partition, _funcs, _pareto_front, _iteration);
 
             // Update counters and log the status
             _iteration += 1;

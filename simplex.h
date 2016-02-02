@@ -68,6 +68,8 @@ public:
     double _diameter;   // Longest edge length
 
     static vector<double> glob_Ls;
+    static bool glob_L_was_updated;
+    static double max_diameter;
 
     vector<double> _Ls;          // Cumulative estimates of Lipschitz constants for each criteria
     vector<double> _grad_norms;  // Lipschitz constant estimate calculated by Simplex Gradient Euclidean norm.
@@ -121,8 +123,19 @@ public:
 
         for (int i=0; i < funcs.size(); i++) {
             _grad_norms[i] = find_simplex_gradient_norm(i, _simplex_gradient_strategy);      // Check in the article if global Lipschitz constant is defined
+
+            //// Update global Ls
+            if (Simplex::glob_Ls.size() < funcs.size()) {
+                Simplex::glob_Ls.push_back(_grad_norms[i]);
+            } else {
+                if (Simplex::glob_Ls[i] < _grad_norms[i]) {
+                    Simplex::glob_Ls[i] = _grad_norms[i];
+                    Simplex::glob_L_was_updated = true;
+                };
+            };
         };
-        // ToDo: Should rename this accordingly to the article?
+        // ToDo: _grad_norms - is not representative title, should be renamed
+        // to mark that these are Lipschitz constant estimates for this simplex.
     };
 
     // Need a scenario where a single simplex is created and I can test with it  
@@ -293,11 +306,7 @@ public:
         return !s->_is_in_partition;
     };
 
-    static double compare_diameter(Simplex* s1, Simplex* s2) {
-        return s1->_diameter < s2->_diameter; 
-    };
-
-    // static double ascending_min_lb_value(Simplex* s1, Simplex* s2) {
+    // static doubLe ascending_min_lb_value(Simplex* s1, Simplex* s2) {
     //     return s1->_min_lb_value < s2->_min_lb_value;
     // };
 
@@ -428,6 +437,8 @@ public:
     };  
 };
 vector<double> Simplex::glob_Ls;
+bool Simplex::glob_L_was_updated = false;
+double Simplex::max_diameter = numeric_limits<double>::max();
 
 
 void Point::_neighbours_estimates_should_be_updated() {
@@ -684,13 +695,13 @@ void Point::_neighbours_estimates_should_be_updated() {
 
 void Simplex::update_estimates(vector<Simplex*> simpls, vector<Function*> funcs, vector<Point*> pareto_front, int iteration) {   // Neighbours strategy - updates estimates
     for (int sid=0; sid < simpls.size(); sid++) {
-        if (simpls[sid]->_should_estimates_be_updated) {
+        if (simpls[sid]->_should_estimates_be_updated or Simplex::glob_L_was_updated) {
             // Use simplex's \hat{L} as initial max_grad_norms value
-            vector<double> max_grad_norms;
-            for (int i=0; i < simpls[sid]->_grad_norms.size(); i++) {
-                max_grad_norms.push_back(simpls[sid]->_grad_norms[i]);   
-            };
-
+            // vector<double> max_grad_norms;
+            // for (int i=0; i < simpls[sid]->_grad_norms.size(); i++) {
+            //     max_grad_norms.push_back(simpls[sid]->_grad_norms[i]);
+            // };
+            //
             // Find max \hat{L} among neighbours
             // for (list<Simplex*>::iterator it=simpls[sid]->_neighbours.begin(); it != simpls[sid]->_neighbours.end(); ++it) {
             //     for (int i=0; i < funcs.size(); i++) {
@@ -702,29 +713,13 @@ void Simplex::update_estimates(vector<Simplex*> simpls, vector<Function*> funcs,
 
             // Update simplex's L
             for (int i=0; i < funcs.size(); i++) {
-                simpls[sid]->_Ls[i] = max_grad_norms[i];
+                // simpls[sid]->_Ls[i] = max_grad_norms[i];
+                simpls[sid]->_Ls[i] = simpls[sid]->_grad_norms[i];
             };
 
             //// Find accurate lower bound point and value estimates with given precision
             for (int i=0; i < simpls[sid]->_min_lbs.size(); i++) {
                 delete simpls[sid]->_min_lbs[i];
-            };
-
-            //// Update global Ls
-            if (Simplex::glob_Ls.size() < funcs.size()) {
-                for (int i=0; i < simpls[sid]->_Ls.size(); i++) {
-                    Simplex::glob_Ls.push_back(simpls[sid]->_Ls[i]);
-                };
-            } else {
-                for (int i=0; i < simpls[sid]->_Ls.size(); i++) {
-                    if (Simplex::glob_Ls[i] < simpls[sid]->_Ls[i]) {
-                        Simplex::glob_Ls[i] = simpls[sid]->_Ls[i];
-                        for (int k=0; k < simpls.size(); k++) {
-                            simpls[k]->_should_estimates_be_updated = true;
-                        };
-                        Simplex::update_estimates(simpls, funcs, pareto_front, iteration);
-                    };
-                };
             };
 
             simpls[sid]->_min_lbs = simpls[sid]->find_accurate_lb_min_estimates(simpls[sid]->_verts, Simplex::glob_Ls, simpls[sid]->_diameter);
@@ -734,6 +729,7 @@ void Simplex::update_estimates(vector<Simplex*> simpls, vector<Function*> funcs,
             simpls[sid]->_should_estimates_be_updated = false;
         };
     };
+    Simplex::glob_L_was_updated = false;
 
     // Note: gali būti, kad slope apibrėžimas pas mane netinkamas atmetant
     // simpleksus su epsilon (potencialiai optimalių simpleksų parinkimo metu).
