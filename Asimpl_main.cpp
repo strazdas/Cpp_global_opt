@@ -109,6 +109,7 @@ int main(int argc, char* argv[]) {
                << " --global_L=" << Simplex::glob_Ls[0]
                << " --min_diam=" << alg->_partition[0]->_diameter
                << " --max_diam=" << alg->_partition[alg->_partition.size() - 1]->_diameter
+               << " --nelder_mead_max_iters=" << NelderMead::_max_iteration
                << " -exe=" << argv[0] << endl;
         cmd = cmd_ss.str();
         popen(cmd.c_str(), "r");

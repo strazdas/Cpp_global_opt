@@ -34,7 +34,8 @@ public:
         _step = 0.1 * diameter;
         _no_improve_thr = 10e-6;
         _no_improv_break = 10;
-        _max_iter = 0;
+        _max_iters = 0;
+        _iters = 0;
         _alpha = 1.;
         _gamma = 2.;
         _rho = -0.5;
@@ -61,7 +62,8 @@ public:
     double _step;
     double _no_improve_thr;
     double _no_improv_break;
-    double _max_iter;
+    double _max_iters;       // Terminate NelderMead if reached this iteration (0 - ignore)
+    double _iters;
     double _alpha;
     double _gamma;
     double _rho;
@@ -70,6 +72,8 @@ public:
     Eigen::MatrixXd _T;      // Cache of Already transposed _T
     Eigen::VectorXd _p;      // Tmp var
     Eigen::VectorXd _lamdas; // Tmp var
+
+    static double _max_iteration;   // Max iteration which was reached
 
     double get_lb_value(double* p) {
         /* Returns lb value at a given point */
@@ -127,6 +131,9 @@ public:
     };
 
     Point* to_point(double* x) {
+        if (_iters > NelderMead::_max_iteration) {
+            NelderMead::_max_iteration = _iters;
+        };
         Point* best_point = new Point(&x[1], _D);
         best_point->add_value(x[0]);
         return best_point;
@@ -171,7 +178,6 @@ public:
         double xe[_V];  // new vertex using gamma
         double xc[_V];  // new vertex using rho
         double rscore, escore, cscore;
-        int iters = 0;
         while (true) {
             sort(res.begin(), res.end(), NelderMead::ascending_first_value);
             best = res[0][0];
@@ -186,12 +192,12 @@ public:
             //     cout << "  -->  " << res[i][0] << endl;
             // };
 
-            // break after max_iter
-            if (_max_iter != 0 and iters >= _max_iter) {
+            // break after max_iters
+            if (_max_iters != 0 and _iters >= _max_iters) {
                 return to_point(res[0]);
             };
-            iters += 1;
-            // cout << iters << ". Best: " << res[0][1] << ", " << res[0][2] << " --> " << res[0][0] << endl;
+            _iters += 1;
+            // cout << _iters << ". Best: " << res[0][1] << ", " << res[0][2] << " --> " << res[0][0] << endl;
 
             // break after no_improv_break iterations with no improvement
             if (best < prev_best - _no_improve_thr) {
@@ -290,5 +296,6 @@ public:
     virtual ~NelderMead() {
     };
 };
+double NelderMead::_max_iteration = 0;
 
 #endif
