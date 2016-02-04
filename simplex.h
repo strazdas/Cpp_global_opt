@@ -5,6 +5,7 @@
 #include "Eigen/Dense"
 #include "Elbme.h"
 #include "PropConte.h"
+#include "NelderMead.h"
 
 using namespace std;
 
@@ -143,7 +144,8 @@ public:
         vector<Point*> estimates_of_accurate_lb_min;
         for (int i=0; i < Ls.size(); i++) {
             // Elbme* alg = new Elbme(verts, Ls, i);
-            PropConte* alg = new PropConte(verts, Ls, i, diameter);
+            // PropConte* alg = new PropConte(verts, Ls, i, diameter);
+            NelderMead* alg = new NelderMead(verts, Ls, i, diameter);
             Point* estimate_of_accurate_lb_min = alg->minimize();
             estimates_of_accurate_lb_min.push_back(estimate_of_accurate_lb_min->copy());
             delete estimate_of_accurate_lb_min;
