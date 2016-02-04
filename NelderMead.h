@@ -32,7 +32,7 @@ public:
 
         // Nelder-Mead parameters
         _step = 0.1 * diameter;
-        _no_improve_thr = 10e-6;
+        _no_improve_thr = 10e-4;
         _no_improv_break = 10;
         _max_iters = 0;
         _iters = 0;
