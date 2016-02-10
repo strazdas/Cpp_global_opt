@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
     // Save results
     string cmd;
     stringstream cmd_ss; 
-    cmd_ss << "./" << callback
+    cmd_ss << callback
            << " --calls=" << func->_calls
            << " --subregions=" << alg->_partition.size()
            << " --duration=" << alg->_duration  
