@@ -385,8 +385,28 @@ public:
     };
 
 
+    vector<Simplex*> select_simplexes_with_best_tolerance() {
+        double best_tolerance = -numeric_limits<double>::max();
+        for (int i=0; i < _partition.size(); i++) {
+            if (_partition[i]->_tolerance > best_tolerance) {
+                best_tolerance = _partition[i]->_tolerance;
+            };
+        };
+        // find_best_tolerance
+        // select simplexes, which have best tolerance
+        vector<Simplex*> selected_simplexes;
+        for (int i=0; i < _partition.size(); i++) {
+            if (_partition[i]->_tolerance == best_tolerance) {
+                selected_simplexes.push_back(_partition[i]);
+            };
+        };
+
+        return selected_simplexes;
+    };
+
     virtual vector<Simplex*> select_simplexes_to_divide() {
-        vector<Simplex*> selected_simplexes = select_simplexes_by_lb_estimate_and_diameter_convex_hull();
+        // vector<Simplex*> selected_simplexes = select_simplexes_by_lb_estimate_and_diameter_convex_hull();
+        vector<Simplex*> selected_simplexes = select_simplexes_with_best_tolerance();
         return selected_simplexes;
     };
 
