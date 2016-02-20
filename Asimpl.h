@@ -407,13 +407,13 @@ public:
             double bias = b1 - slope * a1;
 
             //// Note: This condition does not work, when f_min -> 0.
-            if (bias > f_min - 0.0001*fabs(f_min)) {   // epsilon
-                selected[selected.size() - i -2]->_should_be_divided = false;
-            };
-
-            // if (slope <= Simplex::glob_Ls[0]) {
+            // if (bias > f_min - 0.0001*fabs(f_min)) {   // epsilon
             //     selected[selected.size() - i -2]->_should_be_divided = false;
             // };
+
+            if (slope <= Simplex::glob_Ls[0]) {
+                selected[selected.size() - i -2]->_should_be_divided = false;
+            };
         };
 
         // Remove simplexes which should not be divided
