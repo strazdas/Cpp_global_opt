@@ -61,6 +61,7 @@ public:
     static vector<double> glob_Ls;
     static bool glob_L_was_updated;
     static double max_diameter;
+    static double min_diameter;
 
     vector<double> _Ls;          // Cumulative estimates of Lipschitz constants for each criteria
     vector<double> _grad_norms;  // Lipschitz constant estimate calculated by Simplex Gradient Euclidean norm.
@@ -424,6 +425,7 @@ public:
 vector<double> Simplex::glob_Ls;
 bool Simplex::glob_L_was_updated = false;
 double Simplex::max_diameter = numeric_limits<double>::max();
+double Simplex::min_diameter = numeric_limits<double>::max();
 
 
 void Point::_neighbours_estimates_should_be_updated() {

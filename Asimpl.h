@@ -316,7 +316,6 @@ public:
         vector<Simplex*> sorted_partition = _partition;   // Note: Could sort globally, resorting would take less time
 
         // Simplex::print(sorted_partition, "Selecting for division from: ");
-        sort(sorted_partition.begin(), sorted_partition.end(), Simplex::ascending_diameter);
         double f_min = _funcs[0]->_f_min;
 
         // Find simplex with  minimum metric  and  unique diameters
@@ -380,6 +379,7 @@ public:
                 double slope = (b2 - b1)/(a2 - a1);
                 double bias = b1 - slope * a1;
 
+                //// Note: This condition does not work: very small simplexes are also divided.
                 for (int i=0; i < best_for_size.size(); i++) {
                     if (best_for_size[i]->_min_lb_value < slope*best_for_size[i]->_diameter + bias +1e-12) {
                         simplexes_below_line.push_back(best_for_size[i]);
@@ -387,8 +387,8 @@ public:
                 };
                 selected = convex_hull(simplexes_below_line);  // Messes up simplexes_below_line
             } else {
-                selected = best_for_size;    // TODO: Why we divide all of them? Could divide only min_metrc_simplex.
-                                             // Because practiacally this case does not occur ever.
+                // Only two simplexes and bigger has greater value, so they bouth are on convex_hull
+                selected = best_for_size;
             };
         };
 
@@ -406,9 +406,14 @@ public:
             double slope = (b2 - double(b1))/(a2 - a1);
             double bias = b1 - slope * a1;
 
+            //// Note: This condition does not work, when f_min -> 0.
             if (bias > f_min - 0.0001*fabs(f_min)) {   // epsilon
                 selected[selected.size() - i -2]->_should_be_divided = false;
             };
+
+            // if (slope <= Simplex::glob_Ls[0]) {
+            //     selected[selected.size() - i -2]->_should_be_divided = false;
+            // };
         };
 
         // Remove simplexes which should not be divided
@@ -763,7 +768,9 @@ public:
         _funcs = funcs;
         timestamp_t start = get_timestamp();
         partition_feasable_region_combinatoricly();     // Note: Should not use global variables
-        // Simplex::max_diameter = _partition[_partition.size()-1]->_diameter;
+        sort(_partition.begin(), _partition.end(), Simplex::ascending_diameter);
+        Simplex::max_diameter = _partition[_partition.size()-1]->_diameter;
+        Simplex::min_diameter = _partition[_partition.size()-1]->_diameter;
         // Simplex::update_estimates(_partition, _funcs, _pareto_front, 0);
 
         while (_funcs[0]->_calls <= _max_calls && _duration <= _max_duration && !is_accurate_enough()) { // _func->pe() > _min_pe){
@@ -817,13 +824,15 @@ public:
             };
 
             // Update estimates
-            // sort(_partition.begin(), _partition.end(), Simplex::ascending_diameter);
+            sort(_partition.begin(), _partition.end(), Simplex::ascending_diameter);
             // Simplex::max_diameter = _partition[_partition.size()-1]->_diameter;
+            Simplex::max_diameter = _partition[_partition.size()-1]->_diameter;
+            Simplex::min_diameter = _partition[0]->_diameter;
             // Simplex::update_estimates(_partition, _funcs, _pareto_front, _iteration);
 
             // Update counters and log the status
             _iteration += 1;
-            cout << _iteration << ". Simplexes: " << _partition.size() << "  calls: " << _funcs[0]->_calls << "  f_min:" << _funcs[0]->_f_min << " glob_L: " << Simplex::glob_Ls[0] << endl;
+            cout << _iteration << ". Simplexes: " << _partition.size() << "  calls: " << _funcs[0]->_calls << "  f_min:" << _funcs[0]->_f_min << " min_diam: " << Simplex::min_diameter << " glob_L: " << Simplex::glob_Ls[0] << endl;
 
             timestamp_t end = get_timestamp();
             _duration = (end - start) / 1000000.0L;
