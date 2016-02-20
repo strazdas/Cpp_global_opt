@@ -9,10 +9,6 @@
 #define required_argument 1
 #define optional_argument 2
 
-//// Multicriteria convex-hull-from-best 2-diff-vertexes-neighbours (bulk-elbme)
-// Note: Ši algoritmo realizacija skirta tik dviejų kriterijų problemų optimizavimui
-//       nes kai kurie realizacijos sprendimai tinka tik dviejų kriterijų problemoms. 
-
 
 using namespace std;
 

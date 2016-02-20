@@ -10,14 +10,14 @@
 using namespace std;
 
 
-enum LowerBoundStrategy { MinVert, LongestEdgeLB, LowestEdgeLB, All };
-const char* LBS[] = { "Min vert", "Longest edge LB", "Lowest edge LB", "All", 0 };
-enum LStrategy { Self, Neighbours };
-const char* LS[] = { "Self", "Neighbours", 0 };
-enum DivisionStrategy { LongestHalf };
-const char* DS[] = { "Longest Half", 0 };
-enum SimplexGradientStrategy { FFMinVert, FFMaxVert, FFAllVertMean };
-const char* SGS[] = { "FF min vert", "FF max vert", "FF all vert mean", 0 };   // "All vert max" should match "Max vert"
+// enum LowerBoundStrategy { MinVert, LongestEdgeLB, LowestEdgeLB, All };
+// const char* LBS[] = { "Min vert", "Longest edge LB", "Lowest edge LB", "All", 0 };
+// enum LStrategy { Self, Neighbours };
+// const char* LS[] = { "Self", "Neighbours", 0 };
+// enum DivisionStrategy { LongestHalf };
+// const char* DS[] = { "Longest Half", 0 };
+// enum SimplexGradientStrategy { FFMinVert, FFMaxVert, FFAllVertMean };
+// const char* SGS[] = { "FF min vert", "FF max vert", "FF all vert mean", 0 };   // "All vert max" should match "Max vert"
 
 class SimplexTree;
 class SimplexTreeNode;
@@ -27,19 +27,13 @@ class Simplex {  // Designed for outer problems
     Simplex(const Simplex& other){}
     Simplex& operator=(const Simplex& other){}
 public:
-    Simplex(LowerBoundStrategy lower_bound_strategy,
-            LStrategy L_strategy,
-            SimplexGradientStrategy simplex_gradient_strategy
-        ) {
-        _lower_bound_strategy = lower_bound_strategy;
-        _L_strategy = L_strategy;
-        _simplex_gradient_strategy = simplex_gradient_strategy;
+    Simplex() {
         _is_in_partition = true;
         _diameter = 0;
         _tolerance = 0;
         _le_v1 = 0;
         _le_v2 = 0;
-        // _min_vert = 0;
+        _min_vert = 0;
         // _max_vert = 0;
         // _max_vert_value = -numeric_limits<double>::max();
         // _min_vert_value = numeric_limits<double>::max();
@@ -49,10 +43,6 @@ public:
         // _min_lb_value = 0;
         _D = 0;
     };
-
-    LowerBoundStrategy _lower_bound_strategy;
-    LStrategy _L_strategy;
-    SimplexGradientStrategy _simplex_gradient_strategy;
 
     int _D;                       // Variable space dimension
     int _C;                       // Criteria (objective function) space dimension
@@ -75,14 +65,14 @@ public:
     vector<double> _Ls;          // Cumulative estimates of Lipschitz constants for each criteria
     vector<double> _grad_norms;  // Lipschitz constant estimate calculated by Simplex Gradient Euclidean norm.
 
-    // Point* _min_vert;   // Pointer to vertex with lowest function value 
+    Point* _min_vert;   // Pointer to vertex with lowest function value 
     // double _min_vert_value;  // _min_vert function value 
     // Point* _max_vert;
     // double _max_vert_value;
     // double _metric__vert_min_value;     // _f_min - glob_f / _diameter
 
     vector<Point*> _min_lbs;
-    // double _min_lb_value;
+    double _min_lb_value;
     // double _metric__min_lb;       // _f_min - glob_f / _diameter
     
     void init_parameters(vector<Function*> funcs) {   // Called when all verts have been added
@@ -97,6 +87,9 @@ public:
 
         // Sorts vertexes using first criteria values
         sort(_verts.begin(), _verts.end(), Point::compare_by_value);  // Is there calculation of intersection anywhere in the algorithm, in this case sorting by adress is needed?
+        _min_vert = _verts[0];
+        _tolerance = _min_vert->_values[0];
+        _min_lb_value = _min_vert->_values[0];
 
         // Find longest edge length and verts
         double edge_length;  // Temporary variable
@@ -123,7 +116,7 @@ public:
         // };
 
         for (int i=0; i < funcs.size(); i++) {
-            _grad_norms[i] = find_simplex_gradient_norm(i, _simplex_gradient_strategy);      // Check in the article if global Lipschitz constant is defined
+            _grad_norms[i] = find_simplex_gradient_norm(i);      // Check in the article if global Lipschitz constant is defined
 
            //// Update global Ls
            if (Simplex::glob_Ls.size() < funcs.size()) {
@@ -158,7 +151,7 @@ public:
 
     static void update_estimates(vector<Simplex*> simpls, vector<Function*> funcs, vector<Point*> pareto_front, int iteration);
 
-    double find_simplex_gradient_norm(int crit_id, SimplexGradientStrategy simplex_gradient_strategy){ 
+    double find_simplex_gradient_norm(int crit_id){ 
         double L_estimate = 0;
         // Eigen::VectorXd f_diff(_D);
         // Eigen::MatrixXd x_diff(_D, _D);
@@ -398,12 +391,7 @@ public:
                };
                log_file << " (" << simplexes[i]->_verts[j]->_values[0]<<"); ";
            };
-           if (simplexes[i]->_L_strategy == Self) {
-                log_file << " ("<< simplexes[i]->_diameter << "," << simplexes[i]->_tolerance << ")" << endl;
-           };
-           if (simplexes[i]->_L_strategy == Neighbours) {
-                log_file << " ("<< simplexes[i]->_diameter << "," << simplexes[i]->_tolerance << ")" << endl;
-           };
+           log_file << " ("<< simplexes[i]->_diameter << "," << simplexes[i]->_tolerance << ")" << endl;
        };
        log_file << "Selected:" << endl;
        for (int i=0; i < selected.size(); i++) {
@@ -413,12 +401,7 @@ public:
                };
                log_file << " (" << selected[i]->_verts[j]->_values[0]<<"); ";
            };
-           if (selected[i]->_L_strategy == Self) {
-               log_file << " ("<< selected[i]->_diameter << "," << selected[i]->_tolerance << ")" << endl;
-           };
-           if (selected[i]->_L_strategy == Neighbours) {
-               log_file << " ("<< selected[i]->_diameter << "," << selected[i]->_tolerance << ")" << endl;
-           };
+           log_file << " ("<< selected[i]->_diameter << "," << selected[i]->_tolerance << ")" << endl;
        };
 
        log_file.close();
@@ -695,48 +678,48 @@ void Point::_neighbours_estimates_should_be_updated() {
 //     };
 // };
 
-void Simplex::update_estimates(vector<Simplex*> simpls, vector<Function*> funcs, vector<Point*> pareto_front, int iteration) {   // Neighbours strategy - updates estimates
-    for (int sid=0; sid < simpls.size(); sid++) {
-        if (simpls[sid]->_should_estimates_be_updated or Simplex::glob_L_was_updated) {
-            //// Use simplex's \hat{L} as initial max_grad_norms value
-            // vector<double> max_grad_norms;
-            // for (int i=0; i < simpls[sid]->_grad_norms.size(); i++) {
-            //     max_grad_norms.push_back(simpls[sid]->_grad_norms[i]);
-            // };
-            //
-            //// Find max \hat{L} among neighbours
-            // for (list<Simplex*>::iterator it=simpls[sid]->_neighbours.begin(); it != simpls[sid]->_neighbours.end(); ++it) {
-            //     for (int i=0; i < funcs.size(); i++) {
-            //         if ((*it)->_grad_norms[i] > max_grad_norms[i]) {
-            //             max_grad_norms[i] = (*it)->_grad_norms[i];
-            //         };
-            //     };
-            // };
-
-            // Update simplex's L
-            for (int i=0; i < funcs.size(); i++) {
-                // simpls[sid]->_Ls[i] = max_grad_norms[i];
-                simpls[sid]->_Ls[i] = simpls[sid]->_grad_norms[i];
-            };
-
-            //// Find accurate lower bound point and value estimates with given precision
-            for (int i=0; i < simpls[sid]->_min_lbs.size(); i++) {
-                delete simpls[sid]->_min_lbs[i];
-            };
-
-            simpls[sid]->_min_lbs = simpls[sid]->find_accurate_lb_min_estimates(simpls[sid]->_verts, Simplex::glob_Ls, simpls[sid]->_diameter);
-
-            simpls[sid]->_tolerance = simpls[sid]->_min_lbs[0]->_values[0];   // simpls[sid]->find_tolerance(pareto_front);
-
-            simpls[sid]->_should_estimates_be_updated = false;
-        };
-    };
-    Simplex::glob_L_was_updated = false;
-
-    // Note: gali būti, kad slope apibrėžimas pas mane netinkamas atmetant
-    // simpleksus su epsilon (potencialiai optimalių simpleksų parinkimo metu).
-    //     simpls[sid]->_lb = simpls[sid].find_lb();
-    // };
-};
+// void Simplex::update_estimates(vector<Simplex*> simpls, vector<Function*> funcs, vector<Point*> pareto_front, int iteration) {   // Neighbours strategy - updates estimates
+//     for (int sid=0; sid < simpls.size(); sid++) {
+//         if (simpls[sid]->_should_estimates_be_updated or Simplex::glob_L_was_updated) {
+//             //// Use simplex's \hat{L} as initial max_grad_norms value
+//             // vector<double> max_grad_norms;
+//             // for (int i=0; i < simpls[sid]->_grad_norms.size(); i++) {
+//             //     max_grad_norms.push_back(simpls[sid]->_grad_norms[i]);
+//             // };
+//             //
+//             //// Find max \hat{L} among neighbours
+//             // for (list<Simplex*>::iterator it=simpls[sid]->_neighbours.begin(); it != simpls[sid]->_neighbours.end(); ++it) {
+//             //     for (int i=0; i < funcs.size(); i++) {
+//             //         if ((*it)->_grad_norms[i] > max_grad_norms[i]) {
+//             //             max_grad_norms[i] = (*it)->_grad_norms[i];
+//             //         };
+//             //     };
+//             // };
+//
+//             // Update simplex's L
+//             for (int i=0; i < funcs.size(); i++) {
+//                 // simpls[sid]->_Ls[i] = max_grad_norms[i];
+//                 simpls[sid]->_Ls[i] = simpls[sid]->_grad_norms[i];
+//             };
+//
+//             //// Find accurate lower bound point and value estimates with given precision
+//             for (int i=0; i < simpls[sid]->_min_lbs.size(); i++) {
+//                 delete simpls[sid]->_min_lbs[i];
+//             };
+//
+//             simpls[sid]->_min_lbs = simpls[sid]->find_accurate_lb_min_estimates(simpls[sid]->_verts, Simplex::glob_Ls, simpls[sid]->_diameter);
+//
+//             simpls[sid]->_tolerance = simpls[sid]->_min_lbs[0]->_values[0];   // simpls[sid]->find_tolerance(pareto_front);
+//
+//             simpls[sid]->_should_estimates_be_updated = false;
+//         };
+//     };
+//     Simplex::glob_L_was_updated = false;
+//
+//     // Note: gali būti, kad slope apibrėžimas pas mane netinkamas atmetant
+//     // simpleksus su epsilon (potencialiai optimalių simpleksų parinkimo metu).
+//     //     simpls[sid]->_lb = simpls[sid].find_lb();
+//     // };
+// };
 
 #endif
