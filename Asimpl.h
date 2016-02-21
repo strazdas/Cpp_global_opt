@@ -397,24 +397,44 @@ public:
             selected[i]->_should_be_divided = true;
         };
 
-        // Remove simplexes which do not satisfy condition:   f - slope*d > f_min - epsilon*abs(f_min)
+        //// Remove simplexes which do not satisfy condition:   f - slope*d > f_min - epsilon*abs(f_min)
+        // for (int i=0; i < selected.size() -1; i++) {
+        //     // Is slope and bias here calculated correctly?
+        //     double a1 = selected[selected.size() - i -1]->_diameter;
+        //     double b1 = selected[selected.size() - i -1]->_min_lb_value;
+        //     double a2 = selected[selected.size() - i -2]->_diameter;
+        //     double b2 = selected[selected.size() - i -2]->_min_lb_value;
+        //     double slope = (b2 - double(b1))/(a2 - a1);
+        //     double bias = b1 - slope * a1;
+        //
+        //     //// Note: This condition does not work, when f_min -> 0.
+        //     // if (bias > f_min - 0.0001*fabs(f_min)) {   // epsilon
+        //     //     selected[selected.size() - i -2]->_should_be_divided = false;
+        //     // };
+        //
+        //     // if (slope < 0.5) {
+        //     //     selected[selected.size() - i -2]->_should_be_divided = false;
+        //     // };
+        //
+        //     if (b1 - _L*a1 - f_min < 0.0001) {
+        //         selected[selected.size() - i -2]->_should_be_divided = false;
+        //     };
+        // };
+
         for (int i=0; i < selected.size() -1; i++) {
-            double a1 = selected[selected.size() - i -1]->_diameter;
-            double b1 = selected[selected.size() - i -1]->_min_lb_value;
-            double a2 = selected[selected.size() - i -2]->_diameter;
-            double b2 = selected[selected.size() - i -2]->_min_lb_value;
-            double slope = (b2 - double(b1))/(a2 - a1);
-            double bias = b1 - slope * a1;
+            double diam = selected[i]->_diameter;
+            double f_val = selected[i]->_min_lb_value;
+            double big_diam = selected[i+1]->_diameter;
+            double big_f_val = selected[i+1]->_min_lb_value;
 
-            //// Note: This condition does not work, when f_min -> 0.
-            // if (bias > f_min - 0.0001*fabs(f_min)) {   // epsilon
-            //     selected[selected.size() - i -2]->_should_be_divided = false;
-            // };
+            double slope = (big_f_val - double(f_val))/(big_diam - diam);
+            double bias = f_val - slope * diam;
 
-            if (slope <= Simplex::glob_Ls[0]) {
-                selected[selected.size() - i -2]->_should_be_divided = false;
+            if ((f_min - bias) < 0.0001) {
+                selected[i]->_should_be_divided = false;
             };
         };
+
 
         // Remove simplexes which should not be divided
         selected.erase(remove_if(selected.begin(), selected.end(), Simplex::wont_be_divided), selected.end());
