@@ -27,8 +27,8 @@ int main(int argc, char* argv[]) {
     int fid;
     int task_id;
     char* callback = {'\0'};
-    int max_calls = 40000;
-    int max_duration = 3600;
+    int max_calls = 200000;
+    int max_duration = 3600*24;
     double glob_L = numeric_limits<double>::max();
 
     int opt_id;

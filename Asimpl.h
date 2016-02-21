@@ -68,7 +68,7 @@ public:
             Simplex* simpl = new Simplex();
             for (int i=0; i < n + 1; i++){
                 Point* tmp_point = new Point(triangle[i], n);
-                
+
                 Point* point = _funcs[0]->get(tmp_point); 
                 if (tmp_point != point) {
                     delete tmp_point;
@@ -604,7 +604,7 @@ public:
             //     simplex->print();
             //     cout << " ---- " << endl;
             // };
-                
+
             int n = _funcs[0]->_D;
             double c[n];
             for (int i=0; i < n; i++) {
@@ -832,7 +832,7 @@ public:
 
             // Update counters and log the status
             _iteration += 1;
-            cout << _iteration << ". Simplexes: " << _partition.size() << "  calls: " << _funcs[0]->_calls << "  f_min:" << _funcs[0]->_f_min << " min_diam: " << Simplex::min_diameter << " glob_L: " << Simplex::glob_Ls[0] << endl;
+            cout << _iteration << ". Simplexes: " << _partition.size() << "  calls: " << _funcs[0]->_calls << "  f_min:" << _funcs[0]->_f_min << " min_diam: " << Simplex::min_diameter << " max_diam: " << Simplex::max_diameter << " glob_L: " << Simplex::glob_Ls[0] << endl;
 
             timestamp_t end = get_timestamp();
             _duration = (end - start) / 1000000.0L;
